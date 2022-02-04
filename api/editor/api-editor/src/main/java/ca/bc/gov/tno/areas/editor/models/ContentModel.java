@@ -1,9 +1,18 @@
 package ca.bc.gov.tno.areas.editor.models;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import ca.bc.gov.tno.dal.db.ContentStatus;
+import ca.bc.gov.tno.dal.db.entities.Category;
 import ca.bc.gov.tno.dal.db.entities.Content;
+import ca.bc.gov.tno.dal.db.entities.ContentCategory;
+import ca.bc.gov.tno.dal.db.entities.ContentTag;
+import ca.bc.gov.tno.dal.db.entities.ContentTone;
+import ca.bc.gov.tno.dal.db.entities.Tag;
+import ca.bc.gov.tno.dal.db.entities.TimeTracking;
+import ca.bc.gov.tno.dal.db.entities.TonePool;
 import ca.bc.gov.tno.models.AuditColumnModel;
 
 /**
@@ -31,6 +40,11 @@ public class ContentModel extends AuditColumnModel {
   private UserModel owner;
   private Date publishedOn;
   private String sourceURL = "";
+  private List<CategoryModel> categories = new ArrayList<CategoryModel>();
+  private List<TagModel> tags = new ArrayList<TagModel>();
+  private List<TonePoolModel> tonePools = new ArrayList<TonePoolModel>();
+  private List<ActionModel> actions = new ArrayList<ActionModel>();
+  private List<TimeTrackingModel> timeTracking = new ArrayList<TimeTrackingModel>();
 
   /**
    * Creates a new instance of a ContentModel object.
@@ -69,6 +83,21 @@ public class ContentModel extends AuditColumnModel {
       this.owner = new UserModel(entity.getOwner());
       this.publishedOn = entity.getPublishedOn();
       this.sourceURL = entity.getSourceURL();
+      this.categories = entity.getContentCategories().stream()
+          .map((tag) -> new CategoryModel(tag.getCategory(), tag.getScore()))
+          .toList();
+      this.tags = entity.getContentTags().stream()
+          .map((tag) -> new TagModel(tag.getTag()))
+          .toList();
+      this.tonePools = entity.getContentTonePools().stream()
+          .map((tone) -> new TonePoolModel(tone.getTonePool(), tone.getValue()))
+          .toList();
+      this.actions = entity.getContentActions().stream()
+          .map((action) -> new ActionModel(action.getAction(), action.getValue()))
+          .toList();
+      this.timeTracking = entity.getTimeTracking().stream()
+          .map((time) -> new TimeTrackingModel(time))
+          .toList();
     }
   }
 
@@ -91,6 +120,26 @@ public class ContentModel extends AuditColumnModel {
     content.setSourceURL(this.sourceURL);
     content.setMediaTypeId(this.mediaTypeId);
     content.setOwnerId(this.ownerId);
+    content.getContentTags()
+        .addAll(this.tags.stream()
+            .map((tag) -> new ContentTag(content, tag.getId()))
+            .toList());
+    content.getContentCategories()
+        .addAll(this.categories.stream()
+            .map((category) -> new ContentCategory(content, category.getId(), category.getScore()))
+            .toList());
+    content.getContentTonePools()
+        .addAll(this.tonePools.stream()
+            .map((tone) -> new ContentTone(content, tone.getId(), tone.getValue()))
+            .toList());
+    content.getContentCategories()
+        .addAll(this.categories.stream()
+            .map((category) -> new ContentCategory(content, category.getId(), category.getScore()))
+            .toList());
+    content.getTimeTrackings()
+        .addAll(this.timeTracking.stream()
+            .map((time) -> new TimeTracking(content, time.getUserId(), time.getEffort(), time.getActivity()))
+            .toList());
 
     return content;
   }
@@ -387,6 +436,62 @@ public class ContentModel extends AuditColumnModel {
    */
   public void setSourceURL(String sourceURL) {
     this.sourceURL = sourceURL;
+  }
+
+  /**
+   * @return List{TagModel} return the tags
+   */
+  public List<TagModel> getTags() {
+    return tags;
+  }
+
+  /**
+   * @param tags the tags to set
+   */
+  public void setTags(List<TagModel> tags) {
+    this.tags = tags;
+  }
+
+  /**
+   * @return List<CategoryModel> return the categories
+   */
+  public List<CategoryModel> getCategories() {
+    return categories;
+  }
+
+  /**
+   * @param categories the categories to set
+   */
+  public void setCategories(List<CategoryModel> categories) {
+    this.categories = categories;
+  }
+
+  /**
+   * @return List<TonePoolModel> return the tonePools
+   */
+  public List<TonePoolModel> getTonePools() {
+    return tonePools;
+  }
+
+  /**
+   * @param tonePools the tonePools to set
+   */
+  public void setTonePools(List<TonePoolModel> tonePools) {
+    this.tonePools = tonePools;
+  }
+
+  /**
+   * @return List<ActionModel> return the actions
+   */
+  public List<ActionModel> getActions() {
+    return actions;
+  }
+
+  /**
+   * @param actions the actions to set
+   */
+  public void setActions(List<ActionModel> actions) {
+    this.actions = actions;
   }
 
 }

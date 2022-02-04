@@ -30,7 +30,7 @@ export const SelectDate = styled.span<ISelectDateProps>`
         return props.theme.css.primaryColor;
     }
   }};
-  background-color: ${(props) => {
+  /* background-color: ${(props) => {
     switch (props.variant) {
       case SelectDateVariant.primary:
         return props.theme.css.inputBackgroundColor;
@@ -49,7 +49,7 @@ export const SelectDate = styled.span<ISelectDateProps>`
       default:
         return '#38598a';
     }
-  }};
+  }}; */
   border-color: ${(props) => {
     switch (props.variant) {
       case SelectDateVariant.primary:

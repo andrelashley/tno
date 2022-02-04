@@ -45,6 +45,11 @@ public class TonePoolModel extends AuditColumnModel {
   private boolean enabled = true;
 
   /**
+   * The value given to the tone.
+   */
+  private int value;
+
+  /**
    * A collection of role tone pools that belong to this tone pool.
    */
   // private List<ContentTone> contentTones = new ArrayList<>();
@@ -53,6 +58,10 @@ public class TonePoolModel extends AuditColumnModel {
   }
 
   public TonePoolModel(TonePool entity) {
+    this(entity, 0);
+  }
+
+  public TonePoolModel(TonePool entity, int value) {
     super(entity);
 
     if (entity != null) {
@@ -65,6 +74,7 @@ public class TonePoolModel extends AuditColumnModel {
       this.enabled = entity.isEnabled();
       this.sortOrder = entity.getSortOrder();
     }
+    this.value = value;
   }
 
   /**
@@ -135,6 +145,62 @@ public class TonePoolModel extends AuditColumnModel {
    */
   public void setSortOrder(int sortOrder) {
     this.sortOrder = sortOrder;
+  }
+
+  /**
+   * @return int the ownerId
+   */
+  public int getOwnerId() {
+    return ownerId;
+  }
+
+  /**
+   * @param ownerId the ownerId to set
+   */
+  public void setOwnerId(int ownerId) {
+    this.ownerId = ownerId;
+  }
+
+  /**
+   * @return UserModel the owner
+   */
+  public UserModel getOwner() {
+    return owner;
+  }
+
+  /**
+   * @param owner the owner to set
+   */
+  public void setOwner(UserModel owner) {
+    this.owner = owner;
+  }
+
+  /**
+   * @return boolean the shared
+   */
+  public boolean isShared() {
+    return shared;
+  }
+
+  /**
+   * @param shared the shared to set
+   */
+  public void setShared(boolean shared) {
+    this.shared = shared;
+  }
+
+  /**
+   * @return int return the value
+   */
+  public int getValue() {
+    return value;
+  }
+
+  /**
+   * @param value the value to set
+   */
+  public void setValue(int value) {
+    this.value = value;
   }
 
 }

@@ -39,6 +39,15 @@ public interface IContentService {
   Optional<Content> findById(int key);
 
   /**
+   * Find the content for the specified primary key.
+   * 
+   * @param key   The primary key.
+   * @param eager Whether to eager load related entities.
+   * @return A new instance of the content if it exists.
+   */
+  Optional<Content> findById(int key, Boolean eager);
+
+  /**
    * Add a new content to the data source.
    * 
    * @param entity The content to add.

@@ -945,14 +945,14 @@ public class Content extends AuditColumns {
   /**
    * @return List{TimeTracking} return the timeTracking
    */
-  public List<TimeTracking> getTimeTracking() {
+  public List<TimeTracking> getTimeTrackings() {
     return timeTrackings;
   }
 
   /**
    * @param timeTrackings the timeTracking to set
    */
-  public void setTimeTracking(List<TimeTracking> timeTrackings) {
+  public void setTimeTrackings(List<TimeTracking> timeTrackings) {
     this.timeTrackings = timeTrackings;
   }
 

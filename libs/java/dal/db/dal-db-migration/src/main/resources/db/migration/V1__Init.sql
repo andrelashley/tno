@@ -405,7 +405,7 @@ CREATE TABLE IF NOT EXISTS public.content_action
 (
     "content_id" INT NOT NULL,
     "action_id" INT NOT NULL,
-    "value" INT NOT NULL DEFAULT 0,
+    "value" VARCHAR(250) NOT NULL DEFAULT '',
     -- Audit Columns
     "created_by_id" UUID NOT NULL,
     "created_by" VARCHAR(50) NOT NULL,

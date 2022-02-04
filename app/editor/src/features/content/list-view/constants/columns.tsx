@@ -1,5 +1,5 @@
 import { Checkbox } from 'components';
-import { ContentStatus, IContentModel } from 'hooks/api-editor';
+import { IContentModel } from 'hooks/api-editor';
 import moment from 'moment';
 import { Column } from 'react-table';
 
@@ -24,7 +24,7 @@ export const columns: Column<IContentModel>[] = [
   },
   {
     Header: 'Status',
-    accessor: (row) => ContentStatus[row.status],
+    accessor: (row) => row.status,
   },
   {
     Header: 'Source',

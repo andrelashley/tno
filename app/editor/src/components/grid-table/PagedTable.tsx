@@ -4,6 +4,8 @@ import { Column, Row } from 'react-table';
 import { GridTable, IPage } from '.';
 
 export interface IPagedTableProps<CT extends object = {}> {
+  pageIndex?: number;
+  pageSize?: number;
   /**
    * An array of column definitions.
    */
@@ -23,36 +25,43 @@ export interface IPagedTableProps<CT extends object = {}> {
 }
 
 export const PagedTable = <CT extends object>({
+  pageIndex = 0,
+  pageSize = 10,
   columns,
   onRowClick,
   onFetch,
   onPageChange,
 }: IPagedTableProps<CT>) => {
-  const [pageIndex, setPageIndex] = React.useState(0);
-  const [pageSize, setPageSize] = React.useState(10);
-  const [pageCount, setPageCount] = React.useState(-1);
+  const [page, setPage] = React.useState({
+    pageIndex,
+    pageSize,
+    pageCount: -1,
+  });
   const [data, setData] = React.useState<CT[]>([]);
 
-  React.useEffect(() => {
-    const fetch = async (pageIndex: number, pageSize?: number) => {
+  const fetch = React.useCallback(
+    async (pageIndex: number, pageSize?: number) => {
       return await onFetch(pageIndex, pageSize);
-    };
+    },
+    [onFetch],
+  );
+
+  React.useEffect(() => {
+    // if (page.pageIndex !== pageIndex || page.pageSize !== pageSize) {
     fetch(pageIndex, pageSize)
-      .then((page) => {
-        setPageIndex(page.pageIndex);
-        setPageSize(page.pageSize);
-        setPageCount(page.pageCount);
-        setData(page.items);
+      .then((data) => {
+        setPage((page) => ({ ...page, pageCount: data.pageCount }));
+        setData(data.items);
       })
       .catch((error) => {
         // TODO: Handle error.
       });
-  }, [onFetch, pageIndex, pageSize]);
+    // }
+  }, [fetch, pageIndex, pageSize]);
 
   const handlePageChange = React.useCallback(
     (pageIndex: number, pageSize?: number) => {
-      setPageIndex(pageIndex);
-      setPageSize(pageSize ?? 10);
+      setPage((page) => ({ ...page, pageIndex, pageSize: pageSize ?? -1 }));
       if (onPageChange) onPageChange(pageIndex, pageSize);
     },
     [onPageChange],
@@ -66,7 +75,7 @@ export const PagedTable = <CT extends object>({
         manualPagination: true,
         pageIndex: pageIndex,
         pageSize: pageSize,
-        pageCount: pageCount,
+        pageCount: page.pageCount,
       }}
       onRowClick={onRowClick}
       onPageChange={handlePageChange}

@@ -30,6 +30,11 @@ public class CategoryModel extends AuditColumnModel {
   private boolean enabled = true;
 
   /**
+   * The score given to the category.
+   */
+  public int score;
+
+  /**
    * A collection of role categories that belong to this category.
    */
   // private List<ContentCategory> contentCategories = new ArrayList<>();
@@ -38,6 +43,10 @@ public class CategoryModel extends AuditColumnModel {
   }
 
   public CategoryModel(Category entity) {
+    this(entity, 0);
+  }
+
+  public CategoryModel(Category entity, int score) {
     super(entity);
 
     if (entity != null) {
@@ -47,6 +56,7 @@ public class CategoryModel extends AuditColumnModel {
       this.enabled = entity.isEnabled();
       this.sortOrder = entity.getSortOrder();
     }
+    this.score = score;
   }
 
   /**
@@ -117,6 +127,20 @@ public class CategoryModel extends AuditColumnModel {
    */
   public void setSortOrder(int sortOrder) {
     this.sortOrder = sortOrder;
+  }
+
+  /**
+   * @return int the score
+   */
+  public int getScore() {
+    return score;
+  }
+
+  /**
+   * @param score the score to set
+   */
+  public void setScore(int score) {
+    this.score = score;
   }
 
 }

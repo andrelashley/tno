@@ -9,6 +9,10 @@ import ca.bc.gov.tno.IEnumValue;
  */
 public enum ContentStatus implements IEnumValue<Integer> {
   /**
+   * Content has failed to be added to TNO.
+   */
+  Failed(-1),
+  /**
    * Content has been received from data source and is in progress of being
    * ingested. It has not yet been added to TNO.
    */
@@ -35,9 +39,9 @@ public enum ContentStatus implements IEnumValue<Integer> {
    */
   Published(5),
   /**
-   * Content has failed to be added to TNO.
+   * Content has been unpublished.
    */
-  Failed(-1);
+  Unpublished(6);
 
   private final int value;
 

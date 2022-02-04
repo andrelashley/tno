@@ -41,6 +41,11 @@ public class ActionModel extends AuditColumnModel {
   private boolean enabled = true;
 
   /**
+   * The value given to the action.
+   */
+  private String value;
+
+  /**
    * A collection of role actions that belong to this action.
    */
   // private List<ContentAction> contentActions = new ArrayList<>();
@@ -49,6 +54,10 @@ public class ActionModel extends AuditColumnModel {
   }
 
   public ActionModel(Action entity) {
+    this(entity, "");
+  }
+
+  public ActionModel(Action entity, String value) {
     super(entity);
 
     if (entity != null) {
@@ -60,6 +69,7 @@ public class ActionModel extends AuditColumnModel {
       this.enabled = entity.isEnabled();
       this.sortOrder = entity.getSortOrder();
     }
+    this.value = value == null ? "" : value;
   }
 
   /**
@@ -158,6 +168,20 @@ public class ActionModel extends AuditColumnModel {
    */
   public void setSortOrder(int sortOrder) {
     this.sortOrder = sortOrder;
+  }
+
+  /**
+   * @return String the value
+   */
+  public String getValue() {
+    return value;
+  }
+
+  /**
+   * @param sortOrder the value to set
+   */
+  public void setValue(String value) {
+    this.value = value;
   }
 
 }

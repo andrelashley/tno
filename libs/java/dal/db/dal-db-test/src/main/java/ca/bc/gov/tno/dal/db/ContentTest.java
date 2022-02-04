@@ -1,6 +1,5 @@
 package ca.bc.gov.tno.dal.db;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
@@ -9,7 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
+import ca.bc.gov.tno.dal.db.entities.Category;
 import ca.bc.gov.tno.dal.db.entities.Content;
+import ca.bc.gov.tno.dal.db.entities.ContentAction;
+import ca.bc.gov.tno.dal.db.entities.ContentCategory;
+import ca.bc.gov.tno.dal.db.entities.ContentTag;
+import ca.bc.gov.tno.dal.db.entities.ContentTone;
+import ca.bc.gov.tno.dal.db.entities.Tag;
 import ca.bc.gov.tno.dal.db.models.FilterCollection;
 import ca.bc.gov.tno.dal.db.models.LogicalOperators;
 import ca.bc.gov.tno.dal.db.models.SortParam;
@@ -19,7 +24,6 @@ import ca.bc.gov.tno.dal.db.services.interfaces.IDataSourceService;
 import ca.bc.gov.tno.dal.db.services.interfaces.ILicenseService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IMediaTypeService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IUserService;
-import net.bytebuddy.TypeCache.Sort;
 
 @Component
 public class ContentTest {
@@ -46,6 +50,7 @@ public class ContentTest {
     var result = Add();
     result = Update(result);
     FindById(result);
+    FindById(result, true);
     Delete(result);
     Paging();
   }
@@ -58,6 +63,11 @@ public class ContentTest {
     var user = userService.findById(1).get(); // Admin
 
     var content = new Content(contentType, mediaType, license, "SOURCE", user, ContentStatus.Published, "headline");
+    content.getContentActions().add(new ContentAction(content, 1, "test"));
+    content.getContentTags().add(new ContentTag(content, "TBD"));
+    content.getContentTonePools().add(new ContentTone(content, 1, 3));
+    content.getContentCategories().add(new ContentCategory(content, 1, 67));
+
     var added = contentService.add(content);
     if (added.getCreatedOn() == null || added.getUpdatedOn() == null)
       throw new IllegalStateException("Audit dates were not set");
@@ -107,6 +117,17 @@ public class ContentTest {
     var result = contentService.findById(entity.getId());
     if (result.isEmpty())
       throw new IllegalStateException();
+
+    return result;
+  }
+
+  public Optional<Content> FindById(Content entity, Boolean eager) {
+
+    var result = contentService.findById(entity.getId(), eager);
+    if (result.isEmpty())
+      throw new IllegalStateException("Entity was not found");
+    if (result.get().getContentActions().size() == 0)
+      throw new IllegalStateException("Content.contentTags should have results");
 
     return result;
   }

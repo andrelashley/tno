@@ -11,8 +11,7 @@ import {
   SelectDate,
   Text,
 } from 'components';
-import { IContentFilter, LogicalOperator, useApiEditor } from 'hooks';
-import moment from 'moment';
+import { LogicalOperator, useApiEditor } from 'hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKeycloakWrapper } from 'tno-core';
@@ -20,28 +19,28 @@ import { useKeycloakWrapper } from 'tno-core';
 import { columns, fieldTypes, logicalOperators, timeFrames } from './constants';
 import * as styled from './ContentListViewStyled';
 import { IContentListFilter } from './interfaces';
+import { makeFilter } from './makeFilter';
 
 const defaultListFilter: IContentListFilter = {
+  pageIndex: 0,
+  pageSize: 10,
   mediaTypeId: 0,
   ownerId: '',
+  timeFrame: timeFrames[0],
   newspaper: false,
   included: false,
   onTicker: false,
   commentary: false,
   topStory: false,
-  fieldType: 'headline',
+  fieldType: fieldTypes[0],
   logicalOperator: LogicalOperator.Contains,
   searchTerm: '',
 };
 
 export const ContentListView: React.FC = () => {
-  const [pageIndex, setPageIndex] = React.useState(0);
-  const [pageSize, setPageSize] = React.useState<number | undefined>(10);
   const [mediaTypes, setMediaTypes] = React.useState<IOptionItem[]>([]);
   const [users, setUsers] = React.useState<IOptionItem[]>([]);
   const [currentUserId, setCurrentUserId] = React.useState<number>();
-  const [timeFrame, setTimeFrame] = React.useState(timeFrames[0]);
-  const [fieldType, setFieldType] = React.useState(fieldTypes[0]);
   const [listFilter, setListFilter] = React.useState(defaultListFilter);
   const keycloak = useKeycloakWrapper();
   const navigate = useNavigate();
@@ -70,14 +69,6 @@ export const ContentListView: React.FC = () => {
     });
   }, [api]);
 
-  const makeFilter = (filter: IContentListFilter): IContentFilter => ({
-    mediaTypeId: +filter.mediaTypeId > 0 ? +filter.mediaTypeId : undefined,
-    ownerId: +filter.ownerId > 0 ? +filter.ownerId : undefined,
-    hasPage: filter.newspaper === true ? true : undefined,
-    createdStartOn: filter.createdStartOn ? filter.createdStartOn.toISOString() : undefined,
-    createdEndOn: filter.createdEndOn ? filter.createdEndOn.toISOString() : undefined,
-  });
-
   const fetch = React.useCallback(
     async (
       pageIndex: number,
@@ -96,18 +87,17 @@ export const ContentListView: React.FC = () => {
   );
 
   const handlePageChange = (pi: number, ps?: number) => {
-    if (pageIndex !== pi) setPageIndex(pi);
-    if (pageSize !== ps) setPageSize(ps);
+    if (listFilter.pageIndex !== pi) setListFilter({ ...listFilter, pageIndex: pi });
+    if (listFilter.pageSize !== ps)
+      setListFilter({ ...listFilter, pageSize: ps ?? defaultListFilter.pageSize });
   };
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const value = +e.target.value;
-    let createdStartOn: Date | undefined;
-    if (value === 0) createdStartOn = moment().startOf('day').toDate();
-    else if (value === 1) createdStartOn = moment().add(-24, 'hours').toDate();
-    else if (value === 2) createdStartOn = moment().add(-48, 'hours').toDate();
-    else createdStartOn = undefined;
-    setListFilter((filter) => ({ ...filter, createdStartOn }));
+    setListFilter((filter) => ({
+      ...filter,
+      timeFrame: timeFrames.find((tf) => tf.value === value) ?? timeFrames[0],
+    }));
   };
 
   return (
@@ -141,7 +131,7 @@ export const ContentListView: React.FC = () => {
           <RadioGroup
             name="timeFrame"
             label="Time Frame"
-            value={timeFrame}
+            value={listFilter.timeFrame}
             options={timeFrames}
             onChange={handleTimeChange}
           />
@@ -193,9 +183,9 @@ export const ContentListView: React.FC = () => {
               name="fieldType"
               label="Field Type"
               options={fieldTypes}
-              value={fieldType}
+              value={listFilter.fieldType}
               onChange={(newValue) => {
-                setFieldType(newValue as OptionItem);
+                setListFilter({ ...listFilter, fieldType: newValue as OptionItem });
               }}
             />
             <Dropdown
@@ -225,18 +215,18 @@ export const ContentListView: React.FC = () => {
               <SelectDate
                 name="startDate"
                 placeholderText="YYYY MM DD"
-                selected={listFilter.createdStartOn}
+                selected={listFilter.startDate}
                 showTimeSelect
                 dateFormat="Pp"
-                onChange={(date) => setListFilter({ ...listFilter, createdStartOn: date })}
+                onChange={(date) => setListFilter({ ...listFilter, startDate: date })}
               />
               <SelectDate
                 name="endDate"
                 placeholderText="YYYY MM DD"
-                selected={listFilter.createdEndOn}
+                selected={listFilter.endDate}
                 showTimeSelect
                 dateFormat="Pp"
-                onChange={(date) => setListFilter({ ...listFilter, createdEndOn: date })}
+                onChange={(date) => setListFilter({ ...listFilter, endDate: date })}
               />
             </div>
           </div>
@@ -259,9 +249,10 @@ export const ContentListView: React.FC = () => {
             name="clear"
             variant={ButtonVariant.secondary}
             onClick={() => {
-              setListFilter({ ...defaultListFilter, ownerId: currentUserId ?? '' });
-              setTimeFrame(timeFrames[0]);
-              setFieldType(fieldTypes[0]);
+              setListFilter({
+                ...defaultListFilter,
+                ownerId: currentUserId ?? '',
+              });
             }}
           >
             Clear
@@ -274,6 +265,8 @@ export const ContentListView: React.FC = () => {
           onFetch={(pageIndex, pageSize) => fetch(pageIndex, pageSize, listFilter)}
           onRowClick={(row) => navigate(`/contents/${row.id}`)}
           onPageChange={handlePageChange}
+          pageIndex={listFilter.pageIndex}
+          pageSize={listFilter.pageSize}
         />
       </div>
       <div className="content-actions">

@@ -29,4 +29,8 @@ export enum ContentStatus {
    * Content has been published.
    */
   Published = 5,
+  /**
+   * Content has been unpublished.
+   */
+  Unpublished = 6,
 }

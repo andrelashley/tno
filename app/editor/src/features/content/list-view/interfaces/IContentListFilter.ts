@@ -1,16 +1,20 @@
+import { IOptionItem } from 'components';
 import { LogicalOperator } from 'hooks';
 
 export interface IContentListFilter {
+  pageIndex: number;
+  pageSize: number;
   mediaTypeId: number | '';
   ownerId: number | '';
+  timeFrame: IOptionItem;
   newspaper: boolean;
   included: boolean;
   onTicker: boolean;
   commentary: boolean;
   topStory: boolean;
-  fieldType: string;
+  fieldType: IOptionItem;
   logicalOperator: LogicalOperator | '';
   searchTerm: string;
-  createdStartOn?: Date | null;
-  createdEndOn?: Date | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
 }
