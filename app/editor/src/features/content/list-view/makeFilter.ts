@@ -3,9 +3,9 @@ import { IContentFilter } from 'hooks';
 import { IContentListAdvancedFilter, IContentListFilter } from './interfaces';
 import { setTimeFrame } from './setTimeFrame';
 
-export interface IFilter extends IContentListFilter, IContentListAdvancedFilter {}
-
-export const makeFilter = (filter: IContentListFilter | IFilter): IContentFilter => {
+export const makeFilter = (
+  filter: IContentListFilter & IContentListAdvancedFilter,
+): IContentFilter => {
   const advanced = filter as IContentListAdvancedFilter;
   return {
     mediaTypeId: +filter.mediaTypeId > 0 ? +filter.mediaTypeId : undefined,

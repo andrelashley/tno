@@ -18,6 +18,10 @@ export interface IRadioGroupProps<OT extends string | number | IOptionItem | HTM
    */
   variant?: RadioVariant;
   /**
+   * Tooltip to display.
+   */
+  tooltip?: string;
+  /**
    * An array of options.
    */
   options?: readonly OT[];
@@ -39,6 +43,7 @@ export interface IRadioGroupProps<OT extends string | number | IOptionItem | HTM
 export const RadioGroup = <OT extends string | number | IOptionItem | HTMLOptionElement>({
   name,
   label,
+  tooltip,
   children,
   options,
   value,
@@ -68,7 +73,11 @@ export const RadioGroup = <OT extends string | number | IOptionItem | HTMLOption
 
   return (
     <div className="frm-in rag">
-      {label && <label htmlFor={`dpn-${name}`}>{label}</label>}
+      {label && (
+        <label htmlFor={`dpn-${name}`} data-for="main-tooltip" data-tip={tooltip}>
+          {label}
+        </label>
+      )}
       {options
         ? options.map((option) => {
             if (instanceOfIOption(option)) {

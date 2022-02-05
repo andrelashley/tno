@@ -68,7 +68,7 @@ export const GridTable = <T extends object>({
   const {
     showPaging = true,
     manualPagination = false,
-    pageIndex: initialPage = 0,
+    pageIndex: initialPageIndex = 0,
     pageSize: initialPageSize = 10,
     pageCount: initialPageCount = -1,
   } = paging || {};
@@ -95,12 +95,13 @@ export const GridTable = <T extends object>({
       manualPagination,
       pageCount: initialPageCount,
       initialState: {
-        pageIndex: initialPage,
+        pageIndex: initialPageIndex,
         pageSize: initialPageSize,
       },
     },
     usePagination,
   );
+  const [currentPage, setCurrentPage] = React.useState({ pageIndex, pageSize });
   const pager = {
     canPreviousPage,
     canNextPage,
@@ -114,9 +115,19 @@ export const GridTable = <T extends object>({
     pageSize,
   };
 
+  // The user has manually changed the pageIndex.
   React.useEffect(() => {
-    onPageChange(pageIndex, pageSize);
-  }, [onPageChange, pageIndex, pageSize]);
+    gotoPage(initialPageIndex);
+  }, [gotoPage, initialPageIndex]);
+
+  // Pagination has detected a change to the page.
+  React.useEffect(() => {
+    // Only notify parent if the change came internally.
+    if (currentPage.pageIndex !== pageIndex || currentPage.pageSize !== pageSize) {
+      onPageChange(pageIndex, pageSize);
+      setCurrentPage({ pageIndex, pageSize });
+    }
+  }, [onPageChange, pageIndex, pageSize, currentPage]);
 
   return (
     <styled.GridTable {...getTableProps()}>

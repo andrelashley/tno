@@ -2,21 +2,21 @@ export enum ContentStatus {
   /**
    * Content will not be published.
    */
-  Draft = 0,
+  Draft = 'Draft',
   /**
    * Content added to queue to publish.
    */
-  Publish = 1,
+  Publish = 'Publish',
   /**
    * Content has been published.
    */
-  Published = 2,
+  Published = 'Published',
   /**
    * Content has been requested to be unpublished.
    */
-  Unpublish = 3,
+  Unpublish = 'Unpublish',
   /**
    * Content has been unpublished.
    */
-  Unpublished = 4,
+  Unpublished = 'Unpublished',
 }

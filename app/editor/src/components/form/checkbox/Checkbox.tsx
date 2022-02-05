@@ -39,7 +39,7 @@ export const Checkbox: React.FC<ICheckboxProps> = ({
   ...rest
 }) => {
   return (
-    <div className="frm-in chk">
+    <div className="frm-in chk" data-for="main-tooltip" data-tip={tooltip}>
       <styled.Checkbox
         id={`${name}-${value}`}
         name={name}
@@ -47,8 +47,6 @@ export const Checkbox: React.FC<ICheckboxProps> = ({
         ref={ref}
         type={type}
         variant={variant}
-        data-for="main-tooltip"
-        data-tip={tooltip}
         {...rest}
       >
         {children}

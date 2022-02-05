@@ -20,7 +20,7 @@ import { useKeycloakWrapper } from 'tno-core';
 import { columns, fieldTypes, logicalOperators, timeFrames } from './constants';
 import * as styled from './ContentListViewStyled';
 import { IContentListAdvancedFilter, IContentListFilter } from './interfaces';
-import { IFilter, makeFilter } from './makeFilter';
+import { makeFilter } from './makeFilter';
 
 const defaultListFilter: IContentListFilter = {
   pageIndex: 0,
@@ -62,18 +62,21 @@ export const ContentListView: React.FC = () => {
   const username = keycloak.instance.tokenParsed.username;
 
   React.useEffect(() => {
+    // TODO: Redux user values.
     api.getUsers().then((data) => {
       setUsers(
         [new OptionItem('All Users', 0)].concat(
           data.map((u) => new OptionItem(u.displayName, u.id)),
         ),
       );
+      // TODO: Add user.id to keycloak.
       const currentUserId = data.find((u) => u.username === username)?.id ?? 0;
       setListFilter((filter) => ({ ...filter, ownerId: currentUserId }));
     });
   }, [api, username]);
 
   React.useEffect(() => {
+    // TODO: Redux media types.
     api.getMediaTypes().then((data) => {
       setMediaTypes(
         [new OptionItem('All Media', 0)].concat(data.map((m) => new OptionItem(m.name, m.id))),
@@ -82,7 +85,7 @@ export const ContentListView: React.FC = () => {
   }, [api]);
 
   const fetch = React.useCallback(
-    async (filter: IContentListFilter | IFilter) => {
+    async (filter) => {
       try {
         const data = await api.getContents(filter.pageIndex, filter.pageSize, makeFilter(filter));
         const page = new Page(data.page - 1, data.quantity, data?.items, data.total);
@@ -112,6 +115,7 @@ export const ContentListView: React.FC = () => {
     const value = +e.target.value;
     setListFilter((filter) => ({
       ...filter,
+      pageIndex: 0,
       timeFrame: timeFrames.find((tf) => tf.value === value) ?? timeFrames[0],
     }));
   };
@@ -130,6 +134,7 @@ export const ContentListView: React.FC = () => {
               var mediaTypeId = (newValue as IOptionItem).value ?? '';
               setListFilter({
                 ...listFilter,
+                pageIndex: 0,
                 mediaTypeId: typeof mediaTypeId === 'string' ? '' : mediaTypeId,
               });
             }}
@@ -141,25 +146,32 @@ export const ContentListView: React.FC = () => {
             value={users.find((u) => u.value === listFilter.ownerId)}
             onChange={(newValue) => {
               var ownerId = (newValue as IOptionItem).value ?? '';
-              setListFilter({ ...listFilter, ownerId: typeof ownerId === 'string' ? '' : ownerId });
+              setListFilter({
+                ...listFilter,
+                pageIndex: 0,
+                ownerId: typeof ownerId === 'string' ? '' : ownerId,
+              });
             }}
           />
           <RadioGroup
             name="timeFrame"
             label="Time Frame"
+            tooltip="Date created"
             value={listFilter.timeFrame}
             options={timeFrames}
             onChange={handleTimeChange}
+            disabled={!!listFilterAdvanced.startDate || !!listFilterAdvanced.endDate}
           />
           <div className="frm-in chg">
             <label>Filters</label>
             <Checkbox
               name="isPrintContent"
               label="Lois"
+              tooltip="Print Content"
               value="isPrintContent"
               checked={listFilter.isPrintContent}
               onChange={(e) => {
-                setListFilter({ ...listFilter, isPrintContent: e.target.checked });
+                setListFilter({ ...listFilter, pageIndex: 0, isPrintContent: e.target.checked });
               }}
             />
             <Checkbox
@@ -167,28 +179,36 @@ export const ContentListView: React.FC = () => {
               label="Included"
               value="included"
               checked={listFilter.included}
-              onChange={() => setListFilter({ ...listFilter, included: !listFilter.included })}
+              onChange={() =>
+                setListFilter({ ...listFilter, pageIndex: 0, included: !listFilter.included })
+              }
             />
             <Checkbox
               name="ticker"
               label="On Ticker"
               value="ticker"
               checked={listFilter.onTicker}
-              onChange={() => setListFilter({ ...listFilter, onTicker: !listFilter.onTicker })}
+              onChange={() =>
+                setListFilter({ ...listFilter, pageIndex: 0, onTicker: !listFilter.onTicker })
+              }
             />
             <Checkbox
               name="commentary"
               label="Commentary"
               value="commentary"
               checked={listFilter.commentary}
-              onChange={() => setListFilter({ ...listFilter, commentary: !listFilter.commentary })}
+              onChange={() =>
+                setListFilter({ ...listFilter, pageIndex: 0, commentary: !listFilter.commentary })
+              }
             />
             <Checkbox
               name="topStory"
               label="Top Story"
               value="topStory"
               checked={listFilter.topStory}
-              onChange={() => setListFilter({ ...listFilter, topStory: !listFilter.topStory })}
+              onChange={() =>
+                setListFilter({ ...listFilter, pageIndex: 0, topStory: !listFilter.topStory })
+              }
             />
           </div>
         </div>
@@ -225,8 +245,10 @@ export const ContentListView: React.FC = () => {
               }}
             ></Text>
           </div>
-          <div className="dateRange">
-            <label>Date Range</label>
+          <div className="frm-in dateRange">
+            <label data-for="main-tooltip" data-tip="Date created">
+              Date Range
+            </label>
             <div>
               <SelectDate
                 name="startDate"

@@ -1,5 +1,5 @@
 import { Checkbox } from 'components';
-import { ContentStatus, IContentModel, IPrintContentModel } from 'hooks/api-editor';
+import { ContentStatus, IContentModel } from 'hooks/api-editor';
 import moment from 'moment';
 import { Column } from 'react-table';
 
@@ -7,7 +7,11 @@ const checkboxColumn = ({ value }: { value: boolean }) => (
   <Checkbox defaultChecked={value} value={value ? 'true' : 'false'} />
 );
 
-const dateColumn = ({ value }: { value: Date }) => <>{moment(value).format('MM/DD/YYYY')}</>;
+const dateColumn = ({ value }: { value: IContentModel }) => {
+  const created = moment(value.createdOn);
+  const text = created.isValid() ? created.format('MM/DD/YYYY') : '';
+  return <>{text}</>;
+};
 
 export const columns: Column<IContentModel>[] = [
   {
@@ -17,6 +21,10 @@ export const columns: Column<IContentModel>[] = [
   {
     Header: 'Source',
     accessor: 'source',
+  },
+  {
+    Header: 'Type',
+    accessor: (row) => row.mediaType.name,
   },
   {
     Header: 'Section/Page',
@@ -34,12 +42,8 @@ export const columns: Column<IContentModel>[] = [
     accessor: (row) => row.status,
   },
   {
-    Header: 'Type',
-    accessor: (row) => row.mediaType.name,
-  },
-  {
     Header: 'Date',
-    accessor: 'publishedOn',
+    accessor: (row) => row,
     Cell: dateColumn,
   },
   {
