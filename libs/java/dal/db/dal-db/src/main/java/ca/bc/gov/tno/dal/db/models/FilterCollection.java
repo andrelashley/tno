@@ -50,6 +50,19 @@ public class FilterCollection {
   /**
    * Add a filter to the collection.
    * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, Boolean value) {
+    return addFilter(new FilterParam<Boolean>(Boolean.class, table, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
    * @param name            The property name to filter on.
    * @param logicalOperator The logical operator to compare the value.
    * @param value           The value of the property.
@@ -57,6 +70,19 @@ public class FilterCollection {
    */
   public List<Object> addFilter(String name, LogicalOperators logicalOperator, String value) {
     return addFilter(new FilterParam<String>(String.class, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, String value) {
+    return addFilter(new FilterParam<String>(String.class, table, name, logicalOperator, value));
   }
 
   /**
@@ -74,6 +100,19 @@ public class FilterCollection {
   /**
    * Add a filter to the collection.
    * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, Integer value) {
+    return addFilter(new FilterParam<Integer>(Integer.class, table, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
    * @param name            The property name to filter on.
    * @param logicalOperator The logical operator to compare the value.
    * @param value           The value of the property.
@@ -81,6 +120,19 @@ public class FilterCollection {
    */
   public List<Object> addFilter(String name, LogicalOperators logicalOperator, Long value) {
     return addFilter(new FilterParam<Long>(Long.class, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, Long value) {
+    return addFilter(new FilterParam<Long>(Long.class, table, name, logicalOperator, value));
   }
 
   /**
@@ -98,6 +150,19 @@ public class FilterCollection {
   /**
    * Add a filter to the collection.
    * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, Float value) {
+    return addFilter(new FilterParam<Float>(Float.class, table, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
    * @param name            The property name to filter on.
    * @param logicalOperator The logical operator to compare the value.
    * @param value           The value of the property.
@@ -110,6 +175,19 @@ public class FilterCollection {
   /**
    * Add a filter to the collection.
    * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, Double value) {
+    return addFilter(new FilterParam<Double>(Double.class, table, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
    * @param name            The property name to filter on.
    * @param logicalOperator The logical operator to compare the value.
    * @param value           The value of the property.
@@ -117,6 +195,19 @@ public class FilterCollection {
    */
   public List<Object> addFilter(String name, LogicalOperators logicalOperator, Date value) {
     return addFilter(new FilterParam<Date>(Date.class, name, logicalOperator, value));
+  }
+
+  /**
+   * Add a filter to the collection.
+   * 
+   * @param table           The table name to filter on.
+   * @param name            The property name to filter on.
+   * @param logicalOperator The logical operator to compare the value.
+   * @param value           The value of the property.
+   * @return The list of filter parameters.
+   */
+  public List<Object> addFilter(String table, String name, LogicalOperators logicalOperator, Date value) {
+    return addFilter(new FilterParam<Date>(Date.class, table, name, logicalOperator, value));
   }
 
 }

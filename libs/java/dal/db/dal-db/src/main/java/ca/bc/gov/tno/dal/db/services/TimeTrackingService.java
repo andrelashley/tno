@@ -80,6 +80,7 @@ public class TimeTrackingService implements ITimeTrackingService {
       return ListHelper.castList(TimeTracking.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

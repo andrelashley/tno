@@ -2,7 +2,7 @@ import './dialog.scss';
 
 import { Dialog as HDialog } from '@headlessui/react';
 import { Button } from 'components';
-import { IResponseError } from 'hooks';
+import { IResponseErrorModel } from 'hooks';
 import React from 'react';
 
 export interface IDialogProps extends React.HTMLAttributes<HTMLElement> {
@@ -11,7 +11,7 @@ export interface IDialogProps extends React.HTMLAttributes<HTMLElement> {
   title?: string;
   description?: string;
   message?: string;
-  data?: IResponseError;
+  data?: IResponseErrorModel;
 }
 
 export const Dialog: React.FC<IDialogProps> = ({

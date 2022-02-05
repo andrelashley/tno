@@ -79,6 +79,7 @@ public class FileReferenceService implements IFileReferenceService {
       return ListHelper.castList(FileReference.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

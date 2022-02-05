@@ -4,15 +4,15 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import javax.persistence.Persistence;
+
 import ca.bc.gov.tno.dal.db.ContentStatus;
-import ca.bc.gov.tno.dal.db.entities.Category;
 import ca.bc.gov.tno.dal.db.entities.Content;
 import ca.bc.gov.tno.dal.db.entities.ContentCategory;
 import ca.bc.gov.tno.dal.db.entities.ContentTag;
 import ca.bc.gov.tno.dal.db.entities.ContentTone;
-import ca.bc.gov.tno.dal.db.entities.Tag;
 import ca.bc.gov.tno.dal.db.entities.TimeTracking;
-import ca.bc.gov.tno.dal.db.entities.TonePool;
+import ca.bc.gov.tno.dal.db.WorkflowStatus;
 import ca.bc.gov.tno.models.AuditColumnModel;
 
 /**
@@ -21,23 +21,25 @@ import ca.bc.gov.tno.models.AuditColumnModel;
 public class ContentModel extends AuditColumnModel {
   private int id;
   private ContentStatus status;
+  private WorkflowStatus workflowStatus;
   private int contentTypeId;
   private ContentTypeModel contentType;
-  private String headline;
+  private int mediaTypeId;
+  private MediaTypeModel mediaType;
+  private int licenseId;
+  private LicenseModel license;
+  private Integer seriesId;
+  private SeriesModel series;
+  private int ownerId;
+  private UserModel owner;
   private Integer dataSourceId;
   private DataSourceModel dataSource;
   private String source;
+  private String headline;
   private String uid = "";
-  private int licenseId;
-  private LicenseModel license;
-  private int mediaTypeId;
-  private MediaTypeModel mediaType;
   private String page = "";
-  private String section = "";
   private String summary = "";
   private String transcription = "";
-  private int ownerId;
-  private UserModel owner;
   private Date publishedOn;
   private String sourceURL = "";
   private List<CategoryModel> categories = new ArrayList<CategoryModel>();
@@ -64,40 +66,56 @@ public class ContentModel extends AuditColumnModel {
     if (entity != null) {
       this.id = entity.getId();
       this.status = entity.getStatus();
+      this.workflowStatus = entity.getWorkflowStatus();
       this.contentTypeId = entity.getContentTypeId();
       this.contentType = new ContentTypeModel(entity.getContentType());
-      this.headline = entity.getHeadline();
+      this.mediaTypeId = entity.getMediaTypeId();
+      this.mediaType = new MediaTypeModel(entity.getMediaType());
+      this.licenseId = entity.getLicenseId();
+      this.license = new LicenseModel(entity.getLicense());
+      if (entity.getSeriesId() != null) {
+        this.seriesId = entity.getSeriesId();
+        this.series = new SeriesModel(entity.getSeries());
+      }
+      this.ownerId = entity.getOwnerId();
+      this.owner = new UserModel(entity.getOwner());
       this.dataSourceId = entity.getDataSourceId();
       this.dataSource = entity.getDataSource() != null ? new DataSourceModel(entity.getDataSource()) : null;
       this.source = entity.getSource();
+      this.headline = entity.getHeadline();
       this.uid = entity.getUid();
-      this.licenseId = entity.getLicenseId();
-      this.license = new LicenseModel(entity.getLicense());
-      this.mediaTypeId = entity.getMediaTypeId();
-      this.mediaType = new MediaTypeModel(entity.getMediaType());
       this.page = entity.getPage();
-      this.section = entity.getSection();
       this.summary = entity.getSummary();
       this.transcription = entity.getTranscription();
-      this.ownerId = entity.getOwnerId();
-      this.owner = new UserModel(entity.getOwner());
       this.publishedOn = entity.getPublishedOn();
       this.sourceURL = entity.getSourceURL();
-      this.categories = entity.getContentCategories().stream()
-          .map((tag) -> new CategoryModel(tag.getCategory(), tag.getScore()))
-          .toList();
-      this.tags = entity.getContentTags().stream()
-          .map((tag) -> new TagModel(tag.getTag()))
-          .toList();
-      this.tonePools = entity.getContentTonePools().stream()
-          .map((tone) -> new TonePoolModel(tone.getTonePool(), tone.getValue()))
-          .toList();
-      this.actions = entity.getContentActions().stream()
-          .map((action) -> new ActionModel(action.getAction(), action.getValue()))
-          .toList();
-      this.timeTracking = entity.getTimeTracking().stream()
-          .map((time) -> new TimeTrackingModel(time))
-          .toList();
+
+      var putil = Persistence.getPersistenceUtil();
+      if (putil.isLoaded(entity, "contentCategories")) {
+        this.categories = entity.getContentCategories().stream()
+            .map((tag) -> new CategoryModel(tag.getCategory(), tag.getScore()))
+            .toList();
+      }
+      if (putil.isLoaded(entity, "contentTags")) {
+        this.tags = entity.getContentTags().stream()
+            .map((tag) -> new TagModel(tag.getTag()))
+            .toList();
+      }
+      if (putil.isLoaded(entity, "contentTonePools")) {
+        this.tonePools = entity.getContentTonePools().stream()
+            .map((tone) -> new TonePoolModel(tone.getTonePool(), tone.getValue()))
+            .toList();
+      }
+      if (putil.isLoaded(entity, "contentActions")) {
+        this.actions = entity.getContentActions().stream()
+            .map((action) -> new ActionModel(action.getAction(), action.getValue()))
+            .toList();
+      }
+      if (putil.isLoaded(entity, "timeTrackings")) {
+        this.timeTracking = entity.getTimeTrackings().stream()
+            .map((time) -> new TimeTrackingModel(time))
+            .toList();
+      }
     }
   }
 
@@ -106,20 +124,18 @@ public class ContentModel extends AuditColumnModel {
    *
    * @return A new instance of a Content object.
    */
-  public Content Convert() {
-    var content = new Content(0, this.contentTypeId, this.mediaTypeId, this.licenseId, this.source, this.ownerId,
+  public Content ToContent() {
+    var content = new Content(0, this.contentTypeId, this.mediaTypeId, this.licenseId, this.seriesId, this.source,
+        this.ownerId,
         this.status, this.headline);
 
     content.setDataSourceId(this.dataSourceId);
     content.setUid(this.uid);
     content.setPage(this.page);
-    content.setSection(this.section);
     content.setSummary(this.summary);
     content.setTranscription(this.transcription);
     content.setPublishedOn(this.publishedOn);
     content.setSourceURL(this.sourceURL);
-    content.setMediaTypeId(this.mediaTypeId);
-    content.setOwnerId(this.ownerId);
     content.getContentTags()
         .addAll(this.tags.stream()
             .map((tag) -> new ContentTag(content, tag.getId()))
@@ -170,6 +186,48 @@ public class ContentModel extends AuditColumnModel {
    */
   public void setStatus(ContentStatus status) {
     this.status = status;
+  }
+
+  /**
+   * @return WorkflowStatus return the workflowStatus
+   */
+  public WorkflowStatus getWorkflowStatus() {
+    return workflowStatus;
+  }
+
+  /**
+   * @param workflowStatus the workflowStatus to set
+   */
+  public void setWorkflowStatus(WorkflowStatus workflowStatus) {
+    this.workflowStatus = workflowStatus;
+  }
+
+  /**
+   * @return Integer return the seriesId
+   */
+  public Integer getSeriesId() {
+    return seriesId;
+  }
+
+  /**
+   * @param seriesId the seriesId to set
+   */
+  public void setSeriesId(Integer seriesId) {
+    this.seriesId = seriesId;
+  }
+
+  /**
+   * @return SeriesModel return the series
+   */
+  public SeriesModel getSeries() {
+    return series;
+  }
+
+  /**
+   * @param series the series to set
+   */
+  public void setSeries(SeriesModel series) {
+    this.series = series;
   }
 
   /**
@@ -341,20 +399,6 @@ public class ContentModel extends AuditColumnModel {
   }
 
   /**
-   * @return String return the section
-   */
-  public String getSection() {
-    return section;
-  }
-
-  /**
-   * @param section the section to set
-   */
-  public void setSection(String section) {
-    this.section = section;
-  }
-
-  /**
    * @return String return the summary
    */
   public String getSummary() {
@@ -492,6 +536,20 @@ public class ContentModel extends AuditColumnModel {
    */
   public void setActions(List<ActionModel> actions) {
     this.actions = actions;
+  }
+
+  /**
+   * @return List<TimeTrackingModel> return the timeTracking
+   */
+  public List<TimeTrackingModel> getTimeTracking() {
+    return timeTracking;
+  }
+
+  /**
+   * @param timeTracking the timeTracking to set
+   */
+  public void setTimeTracking(List<TimeTrackingModel> timeTracking) {
+    this.timeTracking = timeTracking;
   }
 
 }

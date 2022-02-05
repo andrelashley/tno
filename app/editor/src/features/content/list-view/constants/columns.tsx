@@ -1,5 +1,5 @@
 import { Checkbox } from 'components';
-import { IContentModel } from 'hooks/api-editor';
+import { ContentStatus, IContentModel, IPrintContentModel } from 'hooks/api-editor';
 import moment from 'moment';
 import { Column } from 'react-table';
 
@@ -15,8 +15,15 @@ export const columns: Column<IContentModel>[] = [
     accessor: 'headline',
   },
   {
-    Header: 'Page',
-    accessor: 'page',
+    Header: 'Source',
+    accessor: 'source',
+  },
+  {
+    Header: 'Section/Page',
+    accessor: (row) => {
+      if (row.printContent?.section) return `${row.printContent.section}/${row.page}`;
+      return row.page;
+    },
   },
   {
     Header: 'Username',
@@ -27,25 +34,18 @@ export const columns: Column<IContentModel>[] = [
     accessor: (row) => row.status,
   },
   {
-    Header: 'Source',
-    accessor: 'source',
-  },
-  {
-    Header: 'Section',
-    accessor: 'section',
-  },
-  {
     Header: 'Type',
     accessor: (row) => row.mediaType.name,
   },
   {
     Header: 'Date',
-    accessor: 'date',
+    accessor: 'publishedOn',
     Cell: dateColumn,
   },
   {
     Header: 'Use',
-    accessor: 'use',
+    accessor: (row) =>
+      row.status === ContentStatus.Publish || row.status === ContentStatus.Published,
     Cell: checkboxColumn,
   },
 ];

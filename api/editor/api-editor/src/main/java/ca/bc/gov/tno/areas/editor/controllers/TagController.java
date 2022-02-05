@@ -18,7 +18,7 @@ import ca.bc.gov.tno.areas.editor.models.TagModel;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorTagController")
-@RequestMapping("/editor/tags")
+@RequestMapping({ "/editor/tags", "/api/editor/tags" })
 public class TagController {
 
   /**

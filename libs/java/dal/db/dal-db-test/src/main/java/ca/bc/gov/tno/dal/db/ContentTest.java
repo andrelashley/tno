@@ -8,13 +8,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 
-import ca.bc.gov.tno.dal.db.entities.Category;
 import ca.bc.gov.tno.dal.db.entities.Content;
 import ca.bc.gov.tno.dal.db.entities.ContentAction;
 import ca.bc.gov.tno.dal.db.entities.ContentCategory;
 import ca.bc.gov.tno.dal.db.entities.ContentTag;
 import ca.bc.gov.tno.dal.db.entities.ContentTone;
-import ca.bc.gov.tno.dal.db.entities.Tag;
 import ca.bc.gov.tno.dal.db.models.FilterCollection;
 import ca.bc.gov.tno.dal.db.models.LogicalOperators;
 import ca.bc.gov.tno.dal.db.models.SortParam;
@@ -62,7 +60,8 @@ public class ContentTest {
     // var dataSource = dataSourceService.findById(1).get();
     var user = userService.findById(1).get(); // Admin
 
-    var content = new Content(contentType, mediaType, license, "SOURCE", user, ContentStatus.Published, "headline");
+    var content = new Content(contentType, mediaType, license, null, "SOURCE", user, ContentStatus.Published,
+        "headline");
     content.getContentActions().add(new ContentAction(content, 1, "test"));
     content.getContentTags().add(new ContentTag(content, "TBD"));
     content.getContentTonePools().add(new ContentTone(content, 1, 3));
@@ -81,6 +80,7 @@ public class ContentTest {
     entity.setUid("uid");
     entity.setCreatedBy("illegal");
     entity.setCreatedById(UUID.randomUUID());
+    entity.setStatus(ContentStatus.Unpublish);
 
     var updated = contentService.update(entity);
     if (entity.getCreatedOn().compareTo(updated.getCreatedOn()) != 0)
@@ -150,11 +150,12 @@ public class ContentTest {
     var user = userService.findById(1).get(); // Admin
 
     var c1 = contentService
-        .add(new Content(contentType, mediaType, license, "S1", user, ContentStatus.Published, "headline 1"));
+        .add(new Content(contentType, mediaType, license, null, "S1", user, ContentStatus.Published, "headline 1"));
     var c2 = contentService
-        .add(new Content(contentType, mediaType, license, "S1", user, ContentStatus.InProgress, "headline 2"));
+        .add(new Content(contentType, mediaType, license, null, "S1", user, ContentStatus.Publish, "headline 2"));
     var c3 = contentService
-        .add(new Content(contentType, mediaType, license, "S2", user, ContentStatus.InProgress, "another title 3"));
+        .add(new Content(contentType, mediaType, license, null, "S2", user, ContentStatus.Publish,
+            "another title 3"));
 
     var result = contentService.find(1, 2, null, null);
 
@@ -187,8 +188,13 @@ public class ContentTest {
       throw new IllegalStateException("Result should return 2 items");
     if (result.getTotal() != 2)
       throw new IllegalStateException("Property 'total' should be 2");
-    if (result.getItems().get(0).getId() > result.getItems().get(1).getId())
+    if (result.getItems().get(0).getId() < result.getItems().get(1).getId())
       throw new IllegalStateException("Sort should be descending on 'id'");
+
+    filter.addFilter("userId", LogicalOperators.Equals, 1);
+    result = contentService.find(1, 10, filter, sort);
+    if (result.getItems().get(0).getOwnerId() != 1)
+      throw new IllegalStateException("Results should belong to owner 1");
 
     contentService.delete(c1);
     contentService.delete(c2);

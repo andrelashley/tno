@@ -80,6 +80,7 @@ public class ContentToneService implements IContentToneService {
       return ListHelper.castList(ContentTone.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

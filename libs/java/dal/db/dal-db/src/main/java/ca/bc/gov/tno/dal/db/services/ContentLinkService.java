@@ -81,6 +81,7 @@ public class ContentLinkService implements IContentLinkService {
       return ListHelper.castList(ContentLink.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

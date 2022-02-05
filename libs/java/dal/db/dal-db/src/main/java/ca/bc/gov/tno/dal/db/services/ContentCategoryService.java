@@ -81,6 +81,7 @@ public class ContentCategoryService implements IContentCategoryService {
       return ListHelper.castList(ContentCategory.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

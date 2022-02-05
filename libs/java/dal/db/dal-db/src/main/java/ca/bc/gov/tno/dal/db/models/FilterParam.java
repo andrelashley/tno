@@ -106,7 +106,7 @@ public class FilterParam<T> {
   }
 
   /**
-   * Return the filter condition as a string.
+   * @return Return the filter condition as a string.
    */
   public String toString() {
     return this.toString(null);

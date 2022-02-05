@@ -1,21 +1,25 @@
 import { IContentFilter } from 'hooks';
 
-import { IContentListFilter } from './interfaces';
+import { IContentListAdvancedFilter, IContentListFilter } from './interfaces';
 import { setTimeFrame } from './setTimeFrame';
 
-export const makeFilter = (filter: IContentListFilter): IContentFilter => {
+export interface IFilter extends IContentListFilter, IContentListAdvancedFilter {}
+
+export const makeFilter = (filter: IContentListFilter | IFilter): IContentFilter => {
+  const advanced = filter as IContentListAdvancedFilter;
   return {
     mediaTypeId: +filter.mediaTypeId > 0 ? +filter.mediaTypeId : undefined,
     ownerId: +filter.ownerId > 0 ? +filter.ownerId : undefined,
-    hasPage: filter.newspaper === true ? true : undefined,
-    createdStartOn: filter.startDate
-      ? filter.startDate.toISOString()
+    userId: filter.isPrintContent === true ? +filter.userId : undefined,
+    createdStartOn: advanced.startDate
+      ? advanced.startDate.toISOString()
       : setTimeFrame(filter.timeFrame.value as number)?.toISOString(),
-    createdEndOn: filter.endDate ? filter.endDate.toISOString() : undefined,
-    [filter.fieldType.value as string]: filter.searchTerm !== '' ? filter.searchTerm : undefined,
+    createdEndOn: advanced.endDate ? advanced.endDate.toISOString() : undefined,
+    [(advanced?.fieldType?.value as string) ?? 'fake']:
+      advanced.searchTerm !== '' ? advanced.searchTerm : undefined,
     logicalOperator:
-      filter.searchTerm !== '' && filter.logicalOperator !== ''
-        ? filter.logicalOperator
+      advanced.searchTerm !== '' && advanced.logicalOperator !== ''
+        ? advanced.logicalOperator
         : undefined,
   };
 };

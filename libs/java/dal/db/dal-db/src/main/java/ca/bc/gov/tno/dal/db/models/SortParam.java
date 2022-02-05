@@ -99,16 +99,15 @@ public final class SortParam {
   }
 
   /**
-   * Returns the sort order as a string.
+   * @return Returns the sort order as a string.
    */
   public String toString() {
     return this.toString(null);
   }
 
   /**
-   * Returns the sort order as a string.
-   * 
    * @param defaultTable The default table name.
+   * @return Returns the sort order as a string.
    */
   public String toString(String defaultTable) {
     return String.format("%s%s %s", getTableName(defaultTable), this.column, this.direction.getValue());

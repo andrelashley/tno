@@ -81,6 +81,7 @@ public class ContentTagService implements IContentTagService {
       return ListHelper.castList(ContentTag.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

@@ -1,16 +1,38 @@
-import { ContentStatus, IMediaTypeModel, IUserModel } from '..';
+import {
+  ContentStatus,
+  IAuditColumnsModel,
+  IContentTypeModel,
+  ILicenseModel,
+  IMediaTypeModel,
+  ISeriesModel,
+  IUserModel,
+  WorkflowStatus,
+} from '..';
+import { IPrintContentModel } from '.';
 
-export interface IContentModel {
+export interface IContentModel extends IAuditColumnsModel {
   id: number;
+  printContent?: IPrintContentModel;
   status: ContentStatus;
-  headline: string;
-  page: string;
-  ownerId: number;
-  owner?: IUserModel;
-  source: string;
-  section: string;
+  workflowStatus: WorkflowStatus;
+  contentTypeId: number;
+  contentType: IContentTypeModel;
   mediaTypeId: number;
   mediaType: IMediaTypeModel;
-  date: Date;
-  use: boolean;
+  licenseId: number;
+  license: ILicenseModel;
+  dataSourceId?: number;
+  dataSource?: ISeriesModel;
+  source: string;
+  seriesId?: number;
+  series?: ISeriesModel;
+  ownerId: number;
+  owner: IUserModel;
+  headline: string;
+  uid?: string;
+  page: string;
+  publishedOn: Date;
+  summary: string;
+  transcription?: string;
+  sourceUrl?: string;
 }

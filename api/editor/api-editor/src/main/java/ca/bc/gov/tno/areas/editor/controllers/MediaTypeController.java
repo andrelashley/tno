@@ -17,7 +17,7 @@ import ca.bc.gov.tno.areas.editor.models.MediaTypeModel;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorMediaTypeController")
-@RequestMapping("/editor/media/types")
+@RequestMapping({ "/editor/media/types", "/api/editor/media/types" })
 public class MediaTypeController {
 
   /**

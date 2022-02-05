@@ -13,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -22,9 +23,10 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import ca.bc.gov.tno.dal.db.AuditColumns;
 import ca.bc.gov.tno.dal.db.ContentStatus;
+import ca.bc.gov.tno.dal.db.WorkflowStatus;
 
 /**
- * Content class, defines a piece of content.
+ * Content class, provides a way to store content.
  */
 @Entity
 @Table(name = "content", schema = "public")
@@ -39,10 +41,16 @@ public class Content extends AuditColumns {
   private int id;
 
   /**
-   * The status of the reference in Kafka.
+   * The status of the content.
    */
   @Column(name = "status", nullable = false)
-  private ContentStatus status = ContentStatus.InProgress;
+  private ContentStatus status = ContentStatus.Draft;
+
+  /**
+   * The workflow process status of the content.
+   */
+  @Column(name = "workflow_status", nullable = false)
+  private WorkflowStatus workflowStatus = WorkflowStatus.InProgress;
 
   /**
    * Foreign key to the content type.
@@ -58,6 +66,13 @@ public class Content extends AuditColumns {
   private ContentType contentType;
 
   /**
+   * The print content reference
+   */
+  @OneToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "id", referencedColumnName = "content_id", insertable = true, updatable = true, nullable = true)
+  private PrintContent printContent;
+
+  /**
    * A unique headline to identify the content.
    */
   @Column(name = "headline", nullable = false)
@@ -65,12 +80,14 @@ public class Content extends AuditColumns {
 
   /**
    * Foreign key to the data source.
+   * This can be used to find the ContentReference.
    */
   @Column(name = "data_source_id", nullable = true)
   private Integer dataSourceId;
 
   /**
    * The content type reference.
+   * This can be used to find the ContentReference.
    */
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "data_source_id", insertable = false, updatable = false)
@@ -78,18 +95,20 @@ public class Content extends AuditColumns {
 
   /**
    * A source name.
+   * This can be used to find the ContentReference.
    */
   @Column(name = "source", nullable = false)
   private String source = "";
 
   /**
    * The unique identifier from the source.
+   * This will be used to find the ContentReference.
    */
   @Column(name = "uid")
   private String uid = "";
 
   /**
-   * Foreign key to the license.
+   * Foreign key to the license. [Regular Expire, Special Expire, Never Expire]
    */
   @Column(name = "license_id", nullable = false)
   private int licenseId;
@@ -115,19 +134,30 @@ public class Content extends AuditColumns {
   private MediaType mediaType;
 
   /**
+   * Foreign key to the series.
+   */
+  @Column(name = "series_id", nullable = true)
+  private Integer seriesId;
+
+  /**
+   * The series reference.
+   */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "series_id", insertable = false, updatable = false)
+  private Series series;
+
+  /**
    * The page the content was from.
    */
   @Column(name = "page", nullable = false)
   private String page = "";
 
   /**
-   * The section the content was from.
-   */
-  @Column(name = "section", nullable = false)
-  private String section = "";
-
-  /**
    * The published date.
+   * For Newspaper and CP News content - the date the story is meant to be
+   * published on.
+   * For Snippets - set by Editor.
+   * All other content - the date is managed by ingestion services.
    */
   @Temporal(TemporalType.TIMESTAMP)
   @Column(name = "published_on")
@@ -207,6 +237,13 @@ public class Content extends AuditColumns {
   private List<ContentLink> links = new ArrayList<>();
 
   /**
+   * A collection of content logs linked to this content.
+   */
+  @JsonBackReference("logs")
+  @OneToMany(mappedBy = "content", fetch = FetchType.LAZY)
+  private List<ContentLog> logs = new ArrayList<>();
+
+  /**
    * Creates a new instance of a Content object.
    */
   public Content() {
@@ -221,13 +258,14 @@ public class Content extends AuditColumns {
    * @param contentTypeId Foreign key to content type
    * @param mediaTypeId   Foreign key to media type
    * @param licenseId     Foreign key to license
+   * @param seriesId      Foreign key to series
    * @param dataSourceId  Foreign key to datasource
    * @param ownerId       Foreign key to owning user
    * @param status        The status
    * @param headline      The headline
    */
-  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, int dataSourceId, int ownerId,
-      ContentStatus status, String headline) {
+  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, Integer seriesId, int dataSourceId,
+      int ownerId, ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
     if (headline.length() == 0)
@@ -239,6 +277,7 @@ public class Content extends AuditColumns {
     this.contentTypeId = contentTypeId;
     this.mediaTypeId = mediaTypeId;
     this.licenseId = licenseId;
+    this.seriesId = seriesId;
     this.dataSourceId = dataSourceId;
     this.ownerId = ownerId;
     this.status = status;
@@ -253,11 +292,12 @@ public class Content extends AuditColumns {
    * @param contentTypeId Foreign key to content type
    * @param mediaTypeId   Foreign key to media type
    * @param licenseId     Foreign key to license
+   * @param seriesId      Foreign key to series
    * @param dataSourceId  Foreign key to datasource
    * @param status        The status
    * @param headline      The headline
    */
-  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, int dataSourceId,
+  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, Integer seriesId, int dataSourceId,
       ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -270,6 +310,7 @@ public class Content extends AuditColumns {
     this.contentTypeId = contentTypeId;
     this.mediaTypeId = mediaTypeId;
     this.licenseId = licenseId;
+    this.seriesId = seriesId;
     this.dataSourceId = dataSourceId;
     this.status = status;
     this.headline = headline;
@@ -283,12 +324,14 @@ public class Content extends AuditColumns {
    * @param contentTypeId Foreign key to content type
    * @param mediaTypeId   Foreign key to media type
    * @param licenseId     Foreign key to license
+   * @param seriesId      Foreign key to series
    * @param source        The source of the content
    * @param ownerId       Foreign key to owning user
    * @param status        The status
    * @param headline      The headline
    */
-  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, String source, int ownerId,
+  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, Integer seriesId, String source,
+      int ownerId,
       ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -305,6 +348,7 @@ public class Content extends AuditColumns {
     this.contentTypeId = contentTypeId;
     this.mediaTypeId = mediaTypeId;
     this.licenseId = licenseId;
+    this.seriesId = seriesId;
     this.source = source;
     this.ownerId = ownerId;
     this.status = status;
@@ -319,11 +363,13 @@ public class Content extends AuditColumns {
    * @param contentTypeId Foreign key to content type
    * @param mediaTypeId   Foreign key to media type
    * @param licenseId     Foreign key to license
+   * @param seriesId      Foreign key to series
    * @param source        The source of the content
    * @param status        The status
    * @param headline      The headline
    */
-  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, String source, ContentStatus status,
+  public Content(int id, int contentTypeId, int mediaTypeId, int licenseId, Integer seriesId, String source,
+      ContentStatus status,
       String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -340,6 +386,7 @@ public class Content extends AuditColumns {
     this.contentTypeId = contentTypeId;
     this.mediaTypeId = mediaTypeId;
     this.licenseId = licenseId;
+    this.seriesId = seriesId;
     this.source = source;
     this.status = status;
     this.headline = headline;
@@ -352,12 +399,13 @@ public class Content extends AuditColumns {
    * @param contentType Foreign key to content type
    * @param mediaType   Foreign key to media type
    * @param license     Foreign key to the license
+   * @param series      Foreign key to the series
    * @param dataSource  Foreign key to the datasource
    * @param owner       Foreign key to the owning user
    * @param status      The status
    * @param headline    The headline
    */
-  public Content(ContentType contentType, MediaType mediaType, License license,
+  public Content(ContentType contentType, MediaType mediaType, License license, Series series,
       DataSource dataSource, User owner, ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -382,6 +430,8 @@ public class Content extends AuditColumns {
     this.mediaTypeId = mediaType.getId();
     this.license = license;
     this.licenseId = license.getId();
+    this.series = series;
+    this.seriesId = series != null ? series.getId() : null;
     this.dataSource = dataSource;
     this.dataSourceId = dataSource.getId();
     this.source = dataSource.getCode();
@@ -398,11 +448,12 @@ public class Content extends AuditColumns {
    * @param contentType Foreign key to content type
    * @param mediaType   Foreign key to media type
    * @param license     Foreign key to the license
+   * @param series      Foreign key to the series
    * @param dataSource  Foreign key to the datasource
    * @param status      The status
    * @param headline    The headline
    */
-  public Content(ContentType contentType, MediaType mediaType, License license,
+  public Content(ContentType contentType, MediaType mediaType, License license, Series series,
       DataSource dataSource, ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -425,6 +476,8 @@ public class Content extends AuditColumns {
     this.mediaTypeId = mediaType.getId();
     this.license = license;
     this.licenseId = license.getId();
+    this.series = series;
+    this.seriesId = series != null ? series.getId() : null;
     this.dataSource = dataSource;
     this.dataSourceId = dataSource.getId();
     this.source = dataSource.getCode();
@@ -439,12 +492,13 @@ public class Content extends AuditColumns {
    * @param contentType Foreign key to content type
    * @param mediaType   Foreign key to media type
    * @param license     Foreign key to the license
+   * @param series      Foreign key to the series
    * @param source      The source of the content
    * @param owner       Foreign key to the owning user
    * @param status      The status
    * @param headline    The headline
    */
-  public Content(ContentType contentType, MediaType mediaType, License license,
+  public Content(ContentType contentType, MediaType mediaType, License license, Series series,
       String source, User owner, ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -471,6 +525,8 @@ public class Content extends AuditColumns {
     this.mediaTypeId = mediaType.getId();
     this.license = license;
     this.licenseId = license.getId();
+    this.series = series;
+    this.seriesId = series != null ? series.getId() : null;
     this.source = source;
     this.owner = owner;
     this.ownerId = owner.getId();
@@ -485,11 +541,12 @@ public class Content extends AuditColumns {
    * @param contentType Foreign key to content type
    * @param mediaType   Foreign key to media type
    * @param license     Foreign key to the license
+   * @param series      Foreign key to the series
    * @param source      The source of the content
    * @param status      The status
    * @param headline    The headline
    */
-  public Content(ContentType contentType, MediaType mediaType, License license,
+  public Content(ContentType contentType, MediaType mediaType, License license, Series series,
       String source, ContentStatus status, String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
@@ -514,6 +571,8 @@ public class Content extends AuditColumns {
     this.mediaTypeId = mediaType.getId();
     this.license = license;
     this.licenseId = license.getId();
+    this.series = series;
+    this.seriesId = series != null ? series.getId() : null;
     this.source = source;
     this.status = status;
     this.headline = headline;
@@ -524,18 +583,19 @@ public class Content extends AuditColumns {
    * parameters.
    *
    * @param contentType Foreign key to content type
-   * @param content     Foreign key to content reference
+   * @param contentRef  Foreign key to content reference
    * @param dataSource  Foreign key to data source
+   * @param series      Foreign key to the series
    * @param owner       Foreign key to the owning user
    * @param headline    The headline
    */
-  public Content(ContentType contentType,
-      ContentReference content, DataSource dataSource, User owner, String headline) {
+  public Content(ContentType contentType, ContentReference contentRef, DataSource dataSource, Series series, User owner,
+      String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
     if (headline.length() == 0)
       throw new IllegalArgumentException("Parameter 'headline' cannot be empty.");
-    if (content == null)
+    if (contentRef == null)
       throw new NullPointerException("Parameter 'content' cannot be null.");
     if (dataSource == null)
       throw new NullPointerException("Parameter 'dataSource' cannot be null.");
@@ -554,9 +614,11 @@ public class Content extends AuditColumns {
     this.dataSourceId = dataSource.getId();
     this.license = dataSource.getLicense();
     this.licenseId = dataSource.getLicenseId();
-    this.source = content.getSource();
-    this.uid = content.getUid();
-    this.status = content.getStatus();
+    this.series = series;
+    this.seriesId = series != null ? series.getId() : null;
+    this.source = contentRef.getSource();
+    this.uid = contentRef.getUid();
+    this.workflowStatus = contentRef.getStatus();
     this.owner = owner;
     this.ownerId = owner.getId();
     this.headline = headline;
@@ -567,16 +629,18 @@ public class Content extends AuditColumns {
    * parameters.
    *
    * @param contentType Foreign key to content type
-   * @param content     Foreign key to content reference
+   * @param contentRef  Foreign key to content reference
    * @param dataSource  Foreign key to data source
+   * @param series      Foreign key to the series
    * @param headline    The headline
    */
-  public Content(ContentType contentType, ContentReference content, DataSource dataSource, String headline) {
+  public Content(ContentType contentType, ContentReference contentRef, DataSource dataSource, Series series,
+      String headline) {
     if (headline == null)
       throw new NullPointerException("Parameter 'headline' cannot be null.");
     if (headline.length() == 0)
       throw new IllegalArgumentException("Parameter 'headline' cannot be empty.");
-    if (content == null)
+    if (contentRef == null)
       throw new NullPointerException("Parameter 'content' cannot be null.");
     if (dataSource == null)
       throw new NullPointerException("Parameter 'dataSource' cannot be null.");
@@ -593,9 +657,11 @@ public class Content extends AuditColumns {
     this.dataSourceId = dataSource.getId();
     this.license = dataSource.getLicense();
     this.licenseId = dataSource.getLicenseId();
-    this.source = content.getSource();
-    this.uid = content.getUid();
-    this.status = content.getStatus();
+    this.series = series;
+    this.seriesId = series != null ? series.getId() : null;
+    this.source = contentRef.getSource();
+    this.uid = contentRef.getUid();
+    this.workflowStatus = contentRef.getStatus();
     this.headline = headline;
   }
 
@@ -618,6 +684,20 @@ public class Content extends AuditColumns {
    */
   public void setStatus(ContentStatus status) {
     this.status = status;
+  }
+
+  /**
+   * @return WorkflowStatus return the workflowStatus
+   */
+  public WorkflowStatus getWorkflowStatus() {
+    return workflowStatus;
+  }
+
+  /**
+   * @param workflowStatus the workflowStatus to set
+   */
+  public void setWorkflowStatus(WorkflowStatus workflowStatus) {
+    this.workflowStatus = workflowStatus;
   }
 
   /**
@@ -789,20 +869,6 @@ public class Content extends AuditColumns {
   }
 
   /**
-   * @return String return the section
-   */
-  public String getSection() {
-    return section;
-  }
-
-  /**
-   * @param section the section to set
-   */
-  public void setSection(String section) {
-    this.section = section;
-  }
-
-  /**
    * @return Date return the publishedOn
    */
   public Date getPublishedOn() {
@@ -968,6 +1034,62 @@ public class Content extends AuditColumns {
    */
   public void setLinks(List<ContentLink> links) {
     this.links = links;
+  }
+
+  /**
+   * @return PrintContent return the print content
+   */
+  public PrintContent getPrintContent() {
+    return printContent;
+  }
+
+  /**
+   * @param printContent the print content to set
+   */
+  public void setPrintContent(PrintContent printContent) {
+    this.printContent = printContent;
+  }
+
+  /**
+   * @return List{ContentTone} return the contentTones
+   */
+  public List<ContentTone> getContentTones() {
+    return contentTones;
+  }
+
+  /**
+   * @param contentTones the contentTones to set
+   */
+  public void setContentTones(List<ContentTone> contentTones) {
+    this.contentTones = contentTones;
+  }
+
+  /**
+   * @return Integer return the seriesId
+   */
+  public Integer getSeriesId() {
+    return seriesId;
+  }
+
+  /**
+   * @param seriesId the seriesId to set
+   */
+  public void setSeriesId(Integer seriesId) {
+    this.seriesId = seriesId;
+  }
+
+  /**
+   * @return Series return the series
+   */
+  public Series getSeries() {
+    return series;
+  }
+
+  /**
+   * @param series the series to set
+   */
+  public void setSeries(Series series) {
+    this.series = series;
   }
 
 }

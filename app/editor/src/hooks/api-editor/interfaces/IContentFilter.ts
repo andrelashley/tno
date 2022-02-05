@@ -6,6 +6,7 @@ export interface IContentFilter {
   source?: string;
   dataSourceId?: number;
   ownerId?: number;
+  userId?: number;
   pageName?: string;
   section?: string;
   status?: ContentStatus;
@@ -19,6 +20,5 @@ export interface IContentFilter {
   publishedStartOn?: string;
   publishedEndOn?: string;
   actions?: string[];
-  hasPage?: boolean;
   logicalOperator?: LogicalOperator;
 }

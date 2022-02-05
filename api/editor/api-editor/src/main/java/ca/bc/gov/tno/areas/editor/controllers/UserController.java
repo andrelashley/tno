@@ -18,7 +18,7 @@ import ca.bc.gov.tno.areas.editor.models.UserModel;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorUserController")
-@RequestMapping("/editor/users")
+@RequestMapping({ "/editor/users", "/api/editor/users" })
 public class UserController {
 
   /**

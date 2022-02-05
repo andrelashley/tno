@@ -92,6 +92,7 @@ public class UserService implements IUserService {
       return new Paged<User>(ListHelper.castList(User.class, items), page, quantity, total);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

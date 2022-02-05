@@ -18,7 +18,7 @@ import ca.bc.gov.tno.areas.editor.models.ActionModel;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorActionController")
-@RequestMapping("/editor/actions")
+@RequestMapping({ "/editor/actions", "/api/editor/actions" })
 public class ActionController {
 
   /**

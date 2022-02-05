@@ -18,7 +18,7 @@ import ca.bc.gov.tno.areas.editor.models.TonePoolModel;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorTonePoolController")
-@RequestMapping("/editor/tone/pools")
+@RequestMapping({ "/editor/tone/pools", "/api/editor/tone/pools" })
 public class TonePoolController {
 
   /**

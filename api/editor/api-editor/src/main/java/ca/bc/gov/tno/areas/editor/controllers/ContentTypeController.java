@@ -18,7 +18,7 @@ import ca.bc.gov.tno.areas.editor.models.ContentTypeModel;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorContentTypeController")
-@RequestMapping("/editor/content/types")
+@RequestMapping({ "/editor/content/types", "/api/editor/content/types" })
 public class ContentTypeController {
 
   /**

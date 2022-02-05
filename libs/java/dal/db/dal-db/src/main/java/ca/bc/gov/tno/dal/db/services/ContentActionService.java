@@ -81,6 +81,7 @@ public class ContentActionService implements IContentActionService {
       return ListHelper.castList(ContentAction.class, results);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 

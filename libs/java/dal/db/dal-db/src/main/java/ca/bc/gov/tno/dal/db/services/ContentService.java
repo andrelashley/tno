@@ -19,19 +19,13 @@ import ca.bc.gov.tno.dal.db.entities.ContentTone;
 import ca.bc.gov.tno.dal.db.models.FilterCollection;
 import ca.bc.gov.tno.dal.db.models.FilterParam;
 import ca.bc.gov.tno.dal.db.models.SortParam;
-import ca.bc.gov.tno.dal.db.repositories.IContentActionRepository;
-import ca.bc.gov.tno.dal.db.repositories.IContentCategoryRepository;
 import ca.bc.gov.tno.dal.db.repositories.IContentRepository;
-import ca.bc.gov.tno.dal.db.repositories.IContentTagRepository;
-import ca.bc.gov.tno.dal.db.repositories.IContentToneRepository;
-import ca.bc.gov.tno.dal.db.repositories.ITimeTrackingRepository;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentActionService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentCategoryService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentTagService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentToneService;
-import ca.bc.gov.tno.dal.db.services.interfaces.IFileReferenceService;
-import ca.bc.gov.tno.dal.db.services.interfaces.ITimeTrackingService;
+import ca.bc.gov.tno.dal.db.services.interfaces.IUserService;
 import ca.bc.gov.tno.models.Paged;
 import ca.bc.gov.tno.models.interfaces.IPaged;
 
@@ -48,8 +42,7 @@ public class ContentService implements IContentService {
   private final IContentTagService contentTagService;
   private final IContentCategoryService contentCategoryService;
   private final IContentToneService contentToneService;
-  private final ITimeTrackingService timeTrackingService;
-  private final IFileReferenceService fileReferenceService;
+  private final IUserService userService;
 
   /**
    * Creates a new instance of a ContentService object, initializes with
@@ -61,22 +54,20 @@ public class ContentService implements IContentService {
    * @param contentTagService      The content tag service.
    * @param contentCategoryService The content category service.
    * @param contentToneService     The content tone pool service.
-   * @param timeTrackingService    The time tracking service.
-   * @param fileReferenceService   The file reference service.
+   * @param userService            The user service.
    */
   @Autowired
   public ContentService(final SessionFactory sessionFactory, final IContentRepository repository,
       final IContentActionService contentActionService, final IContentTagService contentTagService,
       final IContentCategoryService contentCategoryService, final IContentToneService contentToneService,
-      final ITimeTrackingService timeTrackingService, final IFileReferenceService fileReferenceService) {
+      final IUserService userService) {
     this.sessionFactory = sessionFactory;
     this.repository = repository;
     this.contentActionService = contentActionService;
     this.contentTagService = contentTagService;
     this.contentCategoryService = contentCategoryService;
     this.contentToneService = contentToneService;
-    this.timeTrackingService = timeTrackingService;
-    this.fileReferenceService = fileReferenceService;
+    this.userService = userService;
   }
 
   /**
@@ -113,6 +104,11 @@ public class ContentService implements IContentService {
     var session = sessionFactory.getCurrentSession();
     var ts = session.beginTransaction();
 
+    // var userFilter = filter != null ? (FilterParam<?>)
+    // filter.getFilters().stream()
+    // .filter((f) -> ((FilterParam<?>)
+    // f).getColumn().equals("userId")).findAny().orElse(null) : null;
+
     // TODO: Switch to parameters.
     StringBuilder where = new StringBuilder();
     if (filter != null && filter.getFilters().size() > 0) {
@@ -121,7 +117,15 @@ public class ContentService implements IContentService {
       var first = true;
       for (Object op : filters) {
         var param = (FilterParam<?>) op;
-        where.append(String.format("%s %s", (!first ? " AND" : ""), param.toString("content")));
+
+        // Filter 'userId' is a special use-case. It will look for content the user
+        // owns, created, or edited.
+        if (param.getColumn().equals("userId")) {
+          where
+              .append(String.format("%s %s", (!first ? " AND" : ""), "content.ownerId=" + param.getValue().toString()));
+        } else {
+          where.append(String.format("%s %s", (!first ? " AND" : ""), param.toString("content")));
+        }
         first = false;
       }
     }
@@ -134,12 +138,22 @@ public class ContentService implements IContentService {
           JOIN FETCH content.contentType AS contentType
           JOIN FETCH content.mediaType AS mediaType
           JOIN FETCH content.license AS license
+          LEFT JOIN FETCH content.printContent AS print
           LEFT JOIN FETCH content.owner AS owner
           LEFT JOIN FETCH content.dataSource AS dataSource
           """ + where.toString() + order;
+
       var pageQuery = session.createQuery(pageSql)
           .setFirstResult((page - 1) * quantity)
           .setMaxResults(quantity);
+
+      // if (userFilter != null) {
+      // Get the user key for the specified 'userId' filter value.
+      // var user = userService.findById((Integer)
+      // userFilter.getValue()).orElseThrow();
+      // pageQuery.setParameter("userId", userFilter.getValue());
+      // pageQuery.setParameter("username", user.getUsername());
+      // }
       var items = pageQuery.getResultList();
 
       var totalSql = "SELECT COUNT(*) FROM Content content" + where.toString();
@@ -149,6 +163,7 @@ public class ContentService implements IContentService {
       return new Paged<Content>(ListHelper.castList(Content.class, items), page, quantity, total);
     } finally {
       ts.commit();
+      session.close();
     }
   }
 
@@ -182,9 +197,11 @@ public class ContentService implements IContentService {
             JOIN FETCH content.contentType AS contentType
             JOIN FETCH content.mediaType AS mediaType
             JOIN FETCH content.license AS license
+            LEFT JOIN FETCH content.printContent AS print
             LEFT JOIN FETCH content.owner AS owner
+            LEFT JOIN FETCH content.series AS series
             LEFT JOIN FETCH content.dataSource AS dataSource
-            LEFT JOIN FETCH content.timeTrackings
+            LEFT JOIN FETCH content.timeTrackings AS timeTrackings
             WHERE content.id=:id
             """;
         var find = session.createQuery(sql)
@@ -220,6 +237,7 @@ public class ContentService implements IContentService {
         return result;
       } finally {
         ts.commit();
+        session.close();
       }
     }
 
@@ -295,18 +313,18 @@ public class ContentService implements IContentService {
    */
   @Override
   public void delete(Content entity) {
-    var actions = contentActionService.findById(entity.getId());
-    contentActionService.delete(actions);
-    var tags = contentTagService.findById(entity.getId());
-    contentTagService.delete(tags);
-    var categories = contentCategoryService.findById(entity.getId());
-    contentCategoryService.delete(categories);
-    var tonePools = contentToneService.findById(entity.getId());
-    contentToneService.delete(tonePools);
-    var time = timeTrackingService.findByContentId(entity.getId());
-    timeTrackingService.delete(time);
-    var files = fileReferenceService.findByContentId(entity.getId());
-    fileReferenceService.delete(files);
+    // var actions = contentActionService.findById(entity.getId());
+    // contentActionService.delete(actions);
+    // var tags = contentTagService.findById(entity.getId());
+    // contentTagService.delete(tags);
+    // var categories = contentCategoryService.findById(entity.getId());
+    // contentCategoryService.delete(categories);
+    // var tonePools = contentToneService.findById(entity.getId());
+    // contentToneService.delete(tonePools);
+    // var time = timeTrackingService.findByContentId(entity.getId());
+    // timeTrackingService.delete(time);
+    // var files = fileReferenceService.findByContentId(entity.getId());
+    // fileReferenceService.delete(files);
     repository.delete(entity);
   }
 

@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentService;
 import ca.bc.gov.tno.areas.editor.models.ContentModel;
 import ca.bc.gov.tno.dal.db.ContentStatus;
+import ca.bc.gov.tno.dal.db.WorkflowStatus;
 import ca.bc.gov.tno.dal.db.entities.Content;
 import ca.bc.gov.tno.dal.db.models.FilterCollection;
 import ca.bc.gov.tno.dal.db.models.LogicalOperators;
@@ -31,7 +32,7 @@ import ca.bc.gov.tno.models.interfaces.IPaged;
  */
 @RolesAllowed({ "administrator", "editor" })
 @RestController("EditorContentController")
-@RequestMapping("/editor/contents")
+@RequestMapping({ "/editor/contents", "/api/editor/contents" })
 public class ContentController {
 
   /**
@@ -49,15 +50,17 @@ public class ContentController {
   public IPaged<ContentModel> findAll(
       @RequestParam(required = false) Integer page,
       @RequestParam(required = false) Integer quantity,
-      @RequestParam(required = false) String pageName,
-      @RequestParam(required = false) String section,
-      @RequestParam(required = false) String headline,
-      @RequestParam(required = false) Integer mediaTypeId,
-      @RequestParam(required = false) Integer contentTypeId,
-      @RequestParam(required = false) String source,
-      @RequestParam(required = false) Integer dataSourceId,
-      @RequestParam(required = false) Integer ownerId,
+      @RequestParam(required = false) LogicalOperators logicalOperator,
       @RequestParam(required = false) ContentStatus status,
+      @RequestParam(required = false) WorkflowStatus workflowStatus,
+      @RequestParam(required = false) Integer contentTypeId,
+      @RequestParam(required = false) Integer mediaTypeId,
+      @RequestParam(required = false) Integer ownerId,
+      @RequestParam(required = false) Integer userId,
+      @RequestParam(required = false) Integer dataSourceId,
+      @RequestParam(required = false) String source,
+      @RequestParam(required = false) String headline,
+      @RequestParam(required = false) String pageName,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date createdOn,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date createdStartOn,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date createdEndOn,
@@ -69,29 +72,32 @@ public class ContentController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Date publishedEndOn,
       @RequestParam(required = false) Boolean hasPage,
       @RequestParam(required = false) String actions,
-      @RequestParam(required = false) LogicalOperators logicalOperator) {
+      @RequestParam(required = false) String edition,
+      @RequestParam(required = false) String section,
+      @RequestParam(required = false) String storyType,
+      @RequestParam(required = false) String byline) {
 
     var filter = new FilterCollection();
     if (hasPage != null && hasPage == true)
       filter.addFilter("page", LogicalOperators.NotEqual, "");
     if (pageName != null)
       filter.addFilter("page", logicalOperator, pageName);
-    if (section != null)
-      filter.addFilter("section", logicalOperator, section);
-    if (headline != null)
-      filter.addFilter("headline", logicalOperator, headline);
-    if (mediaTypeId != null)
-      filter.addFilter("mediaTypeId", logicalOperator, mediaTypeId);
-    if (contentTypeId != null)
-      filter.addFilter("contentTypeId", logicalOperator, contentTypeId);
-    if (source != null)
-      filter.addFilter("source", logicalOperator, source);
-    if (dataSourceId != null)
-      filter.addFilter("dataSourceId", logicalOperator, dataSourceId);
-    if (ownerId != null)
-      filter.addFilter("ownerId", logicalOperator, ownerId);
     if (status != null)
       filter.addFilter("status", logicalOperator, status.getValue());
+    if (contentTypeId != null)
+      filter.addFilter("contentTypeId", logicalOperator, contentTypeId);
+    if (mediaTypeId != null)
+      filter.addFilter("mediaTypeId", logicalOperator, mediaTypeId);
+    if (ownerId != null)
+      filter.addFilter("ownerId", logicalOperator, ownerId);
+    if (userId != null)
+      filter.addFilter("userId", logicalOperator, userId);
+    if (dataSourceId != null)
+      filter.addFilter("dataSourceId", logicalOperator, dataSourceId);
+    if (source != null)
+      filter.addFilter("source", logicalOperator, source);
+    if (headline != null)
+      filter.addFilter("headline", logicalOperator, headline);
     if (createdOn != null)
       filter.addFilter("createdOn", logicalOperator, createdOn);
     if (createdStartOn != null)
@@ -110,6 +116,16 @@ public class ContentController {
       filter.addFilter("publishedOn", LogicalOperators.GreaterThanOrEqual, publishedStartOn);
     if (publishedEndOn != null)
       filter.addFilter("publishedOn", LogicalOperators.LessThanOrEqual, publishedEndOn);
+
+    // Print Content filters.
+    if (section != null)
+      filter.addFilter("print", "section", logicalOperator, section);
+    if (edition != null)
+      filter.addFilter("print", "edition", logicalOperator, edition);
+    if (storyType != null)
+      filter.addFilter("print", "storyType", logicalOperator, storyType);
+    if (byline != null)
+      filter.addFilter("print", "byline", logicalOperator, byline);
 
     var results = contentService.find(page == null ? 1 : page, quantity == null ? 10 : quantity, filter, null);
     var paged = new Paged<ContentModel>(
@@ -144,7 +160,7 @@ public class ContentController {
       MediaType.APPLICATION_ATOM_XML_VALUE,
       MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8" }, produces = MediaType.APPLICATION_JSON_VALUE)
   public Content add(@RequestBody ContentModel model) {
-    var content = contentService.add(model.Convert());
+    var content = contentService.add(model.ToContent());
     return content;
   }
 

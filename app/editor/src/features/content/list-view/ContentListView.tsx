@@ -4,6 +4,7 @@ import {
   Checkbox,
   Dropdown,
   IOptionItem,
+  IPage,
   OptionItem,
   Page,
   PagedTable,
@@ -11,37 +12,49 @@ import {
   SelectDate,
   Text,
 } from 'components';
-import { LogicalOperator, useApiEditor } from 'hooks';
+import { IContentModel, LogicalOperator, useApiEditor } from 'hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKeycloakWrapper } from 'tno-core';
 
 import { columns, fieldTypes, logicalOperators, timeFrames } from './constants';
 import * as styled from './ContentListViewStyled';
-import { IContentListFilter } from './interfaces';
-import { makeFilter } from './makeFilter';
+import { IContentListAdvancedFilter, IContentListFilter } from './interfaces';
+import { IFilter, makeFilter } from './makeFilter';
 
 const defaultListFilter: IContentListFilter = {
   pageIndex: 0,
   pageSize: 10,
   mediaTypeId: 0,
   ownerId: '',
+  userId: '',
   timeFrame: timeFrames[0],
-  newspaper: false,
+  isPrintContent: false,
   included: false,
   onTicker: false,
   commentary: false,
   topStory: false,
+};
+
+const defaultListAdvancedFilter: IContentListAdvancedFilter = {
   fieldType: fieldTypes[0],
   logicalOperator: LogicalOperator.Contains,
   searchTerm: '',
 };
 
+const defaultPage: IPage<IContentModel> = {
+  pageIndex: 0,
+  pageSize: 10,
+  pageCount: -1,
+  items: [],
+};
+
 export const ContentListView: React.FC = () => {
   const [mediaTypes, setMediaTypes] = React.useState<IOptionItem[]>([]);
   const [users, setUsers] = React.useState<IOptionItem[]>([]);
-  const [currentUserId, setCurrentUserId] = React.useState<number>();
+  const [page, setPage] = React.useState(defaultPage);
   const [listFilter, setListFilter] = React.useState(defaultListFilter);
+  const [listFilterAdvanced, setListFilterAdvanced] = React.useState(defaultListAdvancedFilter);
   const keycloak = useKeycloakWrapper();
   const navigate = useNavigate();
   const api = useApiEditor();
@@ -56,7 +69,6 @@ export const ContentListView: React.FC = () => {
         ),
       );
       const currentUserId = data.find((u) => u.username === username)?.id ?? 0;
-      setCurrentUserId(currentUserId);
       setListFilter((filter) => ({ ...filter, ownerId: currentUserId }));
     });
   }, [api, username]);
@@ -70,14 +82,12 @@ export const ContentListView: React.FC = () => {
   }, [api]);
 
   const fetch = React.useCallback(
-    async (
-      pageIndex: number,
-      pageSize?: number,
-      filter: IContentListFilter = defaultListFilter,
-    ) => {
+    async (filter: IContentListFilter | IFilter) => {
       try {
-        const data = await api.getContents(pageIndex, pageSize, makeFilter(filter));
-        return new Page(data.page - 1, data.quantity, data?.items, data.total);
+        const data = await api.getContents(filter.pageIndex, filter.pageSize, makeFilter(filter));
+        const page = new Page(data.page - 1, data.quantity, data?.items, data.total);
+        setPage(page);
+        return page;
       } catch (error) {
         // TODO: Handle error
         throw error;
@@ -85,6 +95,12 @@ export const ContentListView: React.FC = () => {
     },
     [api],
   );
+
+  React.useEffect(() => {
+    fetch({ ...listFilter, ...listFilterAdvanced });
+    // We don't want a render when the advanced filter changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetch, listFilter]);
 
   const handlePageChange = (pi: number, ps?: number) => {
     if (listFilter.pageIndex !== pi) setListFilter({ ...listFilter, pageIndex: pi });
@@ -138,12 +154,12 @@ export const ContentListView: React.FC = () => {
           <div className="frm-in chg">
             <label>Filters</label>
             <Checkbox
-              name="newspaper"
+              name="isPrintContent"
               label="Lois"
-              value="newspaper"
-              checked={listFilter.newspaper}
+              value="isPrintContent"
+              checked={listFilter.isPrintContent}
               onChange={(e) => {
-                setListFilter({ ...listFilter, newspaper: e.target.checked });
+                setListFilter({ ...listFilter, isPrintContent: e.target.checked });
               }}
             />
             <Checkbox
@@ -183,9 +199,9 @@ export const ContentListView: React.FC = () => {
               name="fieldType"
               label="Field Type"
               options={fieldTypes}
-              value={listFilter.fieldType}
+              value={listFilterAdvanced.fieldType}
               onChange={(newValue) => {
-                setListFilter({ ...listFilter, fieldType: newValue as OptionItem });
+                setListFilterAdvanced({ ...listFilterAdvanced, fieldType: newValue as OptionItem });
               }}
             />
             <Dropdown
@@ -193,19 +209,19 @@ export const ContentListView: React.FC = () => {
               label="Logical Operator"
               options={logicalOperators}
               value={logicalOperators.find(
-                (lo) => (LogicalOperator as any)[lo.value] === listFilter.logicalOperator,
+                (lo) => (LogicalOperator as any)[lo.value] === listFilterAdvanced.logicalOperator,
               )}
               onChange={(newValue) => {
                 const logicalOperator = (LogicalOperator as any)[(newValue as OptionItem).value];
-                setListFilter({ ...listFilter, logicalOperator });
+                setListFilterAdvanced({ ...listFilterAdvanced, logicalOperator });
               }}
             />
             <Text
               name="searchTerm"
               label="Search Terms"
-              value={listFilter.searchTerm}
+              value={listFilterAdvanced.searchTerm}
               onChange={(e) => {
-                setListFilter({ ...listFilter, searchTerm: e.target.value.trim() });
+                setListFilterAdvanced({ ...listFilterAdvanced, searchTerm: e.target.value.trim() });
               }}
             ></Text>
           </div>
@@ -215,33 +231,26 @@ export const ContentListView: React.FC = () => {
               <SelectDate
                 name="startDate"
                 placeholderText="YYYY MM DD"
-                selected={listFilter.startDate}
+                selected={listFilterAdvanced.startDate}
                 showTimeSelect
                 dateFormat="Pp"
-                onChange={(date) => setListFilter({ ...listFilter, startDate: date })}
+                onChange={(date) =>
+                  setListFilterAdvanced({ ...listFilterAdvanced, startDate: date })
+                }
               />
               <SelectDate
                 name="endDate"
                 placeholderText="YYYY MM DD"
-                selected={listFilter.endDate}
+                selected={listFilterAdvanced.endDate}
                 showTimeSelect
                 dateFormat="Pp"
-                onChange={(date) => setListFilter({ ...listFilter, endDate: date })}
+                onChange={(date) => setListFilterAdvanced({ ...listFilterAdvanced, endDate: date })}
               />
             </div>
           </div>
           <Button
             name="search"
-            onClick={() => {
-              // setListFilter({
-              //   ...listFilter,
-              //   [fieldType.value]: searchTerm.trim() === '' ? undefined : searchTerm,
-              //   createdStartOn: !!startDate ? moment(startDate).toISOString() : undefined,
-              //   createdEndOn: !!endDate ? moment(endDate).toISOString() : undefined,
-              //   logicalOperator:
-              //     searchTerm.trim() === '' ? undefined : (logicalOperator.value as LogicalOperator),
-              // });
-            }}
+            onClick={() => fetch({ ...listFilter, pageIndex: 0, ...listFilterAdvanced })}
           >
             Search
           </Button>
@@ -249,10 +258,10 @@ export const ContentListView: React.FC = () => {
             name="clear"
             variant={ButtonVariant.secondary}
             onClick={() => {
-              setListFilter({
-                ...defaultListFilter,
-                ownerId: currentUserId ?? '',
+              setListFilterAdvanced({
+                ...defaultListAdvancedFilter,
               });
+              setListFilter({ ...listFilter, pageIndex: 0 });
             }}
           >
             Clear
@@ -262,12 +271,10 @@ export const ContentListView: React.FC = () => {
       <div className="content-list">
         <PagedTable
           columns={columns}
-          onFetch={(pageIndex, pageSize) => fetch(pageIndex, pageSize, listFilter)}
+          page={page}
           onRowClick={(row) => navigate(`/contents/${row.id}`)}
           onPageChange={handlePageChange}
-          pageIndex={listFilter.pageIndex}
-          pageSize={listFilter.pageSize}
-        />
+        ></PagedTable>
       </div>
       <div className="content-actions">
         <Button name="create" onClick={() => navigate('/contents/0')}>
