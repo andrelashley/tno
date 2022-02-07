@@ -26,14 +26,14 @@ const defaultListFilter: IContentListFilter = {
   pageIndex: 0,
   pageSize: 10,
   mediaTypeId: 0,
+  contentTypeId: 0,
   ownerId: '',
   userId: '',
   timeFrame: timeFrames[0],
-  isPrintContent: false,
-  included: false,
-  onTicker: false,
-  commentary: false,
-  topStory: false,
+  included: '',
+  onTicker: '',
+  commentary: '',
+  topStory: '',
 };
 
 const defaultListAdvancedFilter: IContentListAdvancedFilter = {
@@ -51,6 +51,7 @@ const defaultPage: IPage<IContentModel> = {
 
 export const ContentListView: React.FC = () => {
   const [mediaTypes, setMediaTypes] = React.useState<IOptionItem[]>([]);
+  const [contentTypes, setContentTypes] = React.useState<IOptionItem[]>([]);
   const [users, setUsers] = React.useState<IOptionItem[]>([]);
   const [page, setPage] = React.useState(defaultPage);
   const [listFilter, setListFilter] = React.useState(defaultListFilter);
@@ -59,7 +60,8 @@ export const ContentListView: React.FC = () => {
   const navigate = useNavigate();
   const api = useApiEditor();
 
-  const username = keycloak.instance.tokenParsed.username;
+  const username = keycloak.instance.tokenParsed.username; // TODO: switch to user.id when keycloak is setup.
+  const printContentId = (contentTypes.find((ct) => ct.label === 'Print')?.value ?? 0) as number;
 
   React.useEffect(() => {
     // TODO: Redux user values.
@@ -81,6 +83,9 @@ export const ContentListView: React.FC = () => {
       setMediaTypes(
         [new OptionItem('All Media', 0)].concat(data.map((m) => new OptionItem(m.name, m.id))),
       );
+    });
+    api.getContentTypes().then((data) => {
+      setContentTypes(data.map((m) => new OptionItem(m.name, m.id)));
     });
   }, [api]);
 
@@ -131,11 +136,11 @@ export const ContentListView: React.FC = () => {
             value={mediaTypes.find((mt) => mt.value === listFilter.mediaTypeId)}
             defaultValue={mediaTypes[0]}
             onChange={(newValue) => {
-              var mediaTypeId = (newValue as IOptionItem).value ?? '';
+              var mediaTypeId = (newValue as IOptionItem).value ?? 0;
               setListFilter({
                 ...listFilter,
                 pageIndex: 0,
-                mediaTypeId: typeof mediaTypeId === 'string' ? '' : mediaTypeId,
+                mediaTypeId: mediaTypeId as number,
               });
             }}
           />
@@ -168,46 +173,66 @@ export const ContentListView: React.FC = () => {
               name="isPrintContent"
               label="Lois"
               tooltip="Print Content"
-              value="isPrintContent"
-              checked={listFilter.isPrintContent}
+              value={printContentId}
+              checked={listFilter.contentTypeId !== 0}
               onChange={(e) => {
-                setListFilter({ ...listFilter, pageIndex: 0, isPrintContent: e.target.checked });
+                setListFilter({
+                  ...listFilter,
+                  pageIndex: 0,
+                  contentTypeId: e.target.checked ? printContentId : 0,
+                });
               }}
             />
             <Checkbox
               name="included"
               label="Included"
-              value="included"
-              checked={listFilter.included}
-              onChange={() =>
-                setListFilter({ ...listFilter, pageIndex: 0, included: !listFilter.included })
+              value="Included"
+              checked={listFilter.included !== ''}
+              onChange={(e) =>
+                setListFilter({
+                  ...listFilter,
+                  pageIndex: 0,
+                  included: e.target.checked ? e.target.value : '',
+                })
               }
             />
             <Checkbox
               name="ticker"
               label="On Ticker"
-              value="ticker"
-              checked={listFilter.onTicker}
-              onChange={() =>
-                setListFilter({ ...listFilter, pageIndex: 0, onTicker: !listFilter.onTicker })
+              value="On Ticker"
+              checked={listFilter.onTicker !== ''}
+              onChange={(e) =>
+                setListFilter({
+                  ...listFilter,
+                  pageIndex: 0,
+                  onTicker: e.target.checked ? e.target.value : '',
+                })
               }
             />
             <Checkbox
               name="commentary"
               label="Commentary"
-              value="commentary"
-              checked={listFilter.commentary}
-              onChange={() =>
-                setListFilter({ ...listFilter, pageIndex: 0, commentary: !listFilter.commentary })
+              value="Commentary"
+              checked={listFilter.commentary !== ''}
+              onChange={(e) =>
+                setListFilter({
+                  ...listFilter,
+                  pageIndex: 0,
+                  commentary: e.target.checked ? e.target.value : '',
+                })
               }
             />
             <Checkbox
               name="topStory"
               label="Top Story"
-              value="topStory"
-              checked={listFilter.topStory}
-              onChange={() =>
-                setListFilter({ ...listFilter, pageIndex: 0, topStory: !listFilter.topStory })
+              value="Top Story"
+              checked={listFilter.topStory !== ''}
+              onChange={(e) =>
+                setListFilter({
+                  ...listFilter,
+                  pageIndex: 0,
+                  topStory: e.target.checked ? e.target.value : '',
+                })
               }
             />
           </div>

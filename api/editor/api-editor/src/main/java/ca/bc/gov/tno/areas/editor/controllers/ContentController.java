@@ -84,6 +84,8 @@ public class ContentController {
       filter.addFilter("page", logicalOperator, pageName);
     if (status != null)
       filter.addFilter("status", logicalOperator, status.getValue());
+    if (workflowStatus != null)
+      filter.addFilter("workflowStatus", logicalOperator, workflowStatus.getValue());
     if (contentTypeId != null)
       filter.addFilter("contentTypeId", logicalOperator, contentTypeId);
     if (mediaTypeId != null)
@@ -91,7 +93,7 @@ public class ContentController {
     if (ownerId != null)
       filter.addFilter("ownerId", logicalOperator, ownerId);
     if (userId != null)
-      filter.addFilter("userId", logicalOperator, userId);
+      filter.addFilter("timeTracking", "userId", LogicalOperators.Equals, userId);
     if (dataSourceId != null)
       filter.addFilter("dataSourceId", logicalOperator, dataSourceId);
     if (source != null)
@@ -116,6 +118,14 @@ public class ContentController {
       filter.addFilter("publishedOn", LogicalOperators.GreaterThanOrEqual, publishedStartOn);
     if (publishedEndOn != null)
       filter.addFilter("publishedOn", LogicalOperators.LessThanOrEqual, publishedEndOn);
+
+    // Actions
+    if (actions != null) {
+      var actionArray = actions.split(",");
+      for (var action : actionArray) {
+        filter.addFilter("action", "name", LogicalOperators.Equals, action);
+      }
+    }
 
     // Print Content filters.
     if (section != null)

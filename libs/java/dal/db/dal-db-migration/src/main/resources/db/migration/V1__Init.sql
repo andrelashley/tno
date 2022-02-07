@@ -167,8 +167,11 @@ CREATE TABLE IF NOT EXISTS public.schedule
     "name" VARCHAR(50) NOT NULL,
     "description" VARCHAR(2000) NOT NULL DEFAULT '',
     "is_enabled" BOOLEAN NOT NULL DEFAULT true,
+    "schedule_type" INT NOT NULL DEFAULT 0,
     "delay_ms" INT NOT NULL,
-    "run_at" TIMESTAMP WITH TIME ZONE,
+    "run_on" TIMESTAMP WITH TIME ZONE,
+    "start_at" TIME,
+    "stop_at" TIME,
     "repeat" INT NOT NULL,
     "run_on_week_days" INT NOT NULL,
     "run_on_months" INT NOT NULL,
@@ -195,7 +198,6 @@ CREATE TABLE IF NOT EXISTS public.data_source
     "is_enabled" BOOLEAN NOT NULL DEFAULT true,
     "media_type_id" INT NOT NULL,
     "license_id" INT NOT NULL,
-    "schedule_id" INT NOT NULL,
     "topic" VARCHAR(50) NOT NULL,
     "last_ran_on" TIMESTAMP WITH TIME ZONE,
     "connection" TEXT NOT NULL,
@@ -209,12 +211,28 @@ CREATE TABLE IF NOT EXISTS public.data_source
     "updated_on" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "pk_data_source" PRIMARY KEY ("id"),
     CONSTRAINT "fk_media_type_data_source" FOREIGN KEY ("media_type_id") REFERENCES public.media_type ("id"),
-    CONSTRAINT "fk_license_data_source" FOREIGN KEY ("license_id") REFERENCES public.license ("id"),
-    CONSTRAINT "fk_schedule_data_source" FOREIGN KEY ("schedule_id") REFERENCES public.schedule ("id")
+    CONSTRAINT "fk_license_data_source" FOREIGN KEY ("license_id") REFERENCES public.license ("id")
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_data_source_name" ON public.data_source ("name");
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_data_source_code" ON public.data_source ("code");
 CREATE TRIGGER tr_audit_data_source BEFORE INSERT OR UPDATE ON public.data_source FOR EACH ROW EXECUTE PROCEDURE updateAudit();
+
+CREATE TABLE IF NOT EXISTS public.data_source_schedule
+(
+    "data_source_id" INT NOT NULL,
+    "schedule_id" INT NOT NULL,
+    -- Audit Columns
+    "created_by_id" UUID NOT NULL,
+    "created_by" VARCHAR(50) NOT NULL,
+    "created_on" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_by_id" UUID NOT NULL,
+    "updated_by" VARCHAR(50) NOT NULL,
+    "updated_on" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "pk_data_source_schedule" PRIMARY KEY ("data_source_id", "schedule_id"),
+    CONSTRAINT "fk_data_source_data_source_schedule" FOREIGN KEY ("data_source_id") REFERENCES public.data_source ("id") ON DELETE CASCADE,
+    CONSTRAINT "fk_schedule_data_source_schedule" FOREIGN KEY ("schedule_id") REFERENCES public.schedule ("id") ON DELETE CASCADE
+);
+CREATE TRIGGER tr_audit_data_source_schedule BEFORE INSERT OR UPDATE ON public.data_source_schedule FOR EACH ROW EXECUTE PROCEDURE updateAudit();
 
 CREATE TABLE IF NOT EXISTS public.content_reference
 (

@@ -4,6 +4,7 @@ import java.util.Date;
 import java.util.EnumSet;
 
 import ca.bc.gov.tno.dal.db.Months;
+import ca.bc.gov.tno.dal.db.ScheduleType;
 import ca.bc.gov.tno.dal.db.WeekDays;
 import ca.bc.gov.tno.dal.db.entities.Schedule;
 
@@ -29,6 +30,11 @@ public class ScheduleModel {
   private boolean enabled = true;
 
   /**
+   * The schedule type.
+   */
+  private ScheduleType scheduleType = ScheduleType.Repeating;
+
+  /**
    * The number of milliseconds the service should rest before running again.
    */
   private int delayMS;
@@ -37,7 +43,17 @@ public class ScheduleModel {
    * The date and time the service should begin running on. This is useful if a
    * service should be delayed from running for a period of time.
    */
-  private Date runAt;
+  private Date runOn;
+
+  /**
+   * The time to start.
+   */
+  private Date startAt;
+
+  /**
+   * The time to stop.
+   */
+  private Date stopAt;
 
   /**
    * Number of times to run before waiting for next RunAt. "0" is used for
@@ -73,8 +89,11 @@ public class ScheduleModel {
     this.name = entity.getName();
     this.description = entity.getDescription();
     this.enabled = entity.isEnabled();
+    this.scheduleType = entity.getScheduleType();
     this.delayMS = entity.getDelayMS();
-    this.runAt = entity.getRunAt();
+    this.runOn = entity.getRunOn();
+    this.startAt = entity.getStartAt();
+    this.stopAt = entity.getStopAt();
     this.repeat = entity.getRepeat();
     this.runOnWeekDays = entity.getRunOnWeekDays();
     this.runOnMonths = entity.getRunOnMonths();
@@ -152,17 +171,17 @@ public class ScheduleModel {
   }
 
   /**
-   * @return Date return the runAt
+   * @return Date return the runOn
    */
-  public Date getRunAt() {
-    return runAt;
+  public Date getRunOn() {
+    return runOn;
   }
 
   /**
-   * @param runAt the runAt to set
+   * @param runOn the runOn to set
    */
-  public void setRunAt(Date runAt) {
-    this.runAt = runAt;
+  public void setRunOn(Date runOn) {
+    this.runOn = runOn;
   }
 
   /**
@@ -219,6 +238,48 @@ public class ScheduleModel {
    */
   public void setDayOfMonth(int dayOfMonth) {
     this.dayOfMonth = dayOfMonth;
+  }
+
+  /**
+   * @return ScheduleType return the scheduleType
+   */
+  public ScheduleType getScheduleType() {
+    return scheduleType;
+  }
+
+  /**
+   * @param scheduleType the scheduleType to set
+   */
+  public void setScheduleType(ScheduleType scheduleType) {
+    this.scheduleType = scheduleType;
+  }
+
+  /**
+   * @return Date return the startAt
+   */
+  public Date getStartAt() {
+    return startAt;
+  }
+
+  /**
+   * @param startAt the startAt to set
+   */
+  public void setStartAt(Date startAt) {
+    this.startAt = startAt;
+  }
+
+  /**
+   * @return Date return the stopAt
+   */
+  public Date getStopAt() {
+    return stopAt;
+  }
+
+  /**
+   * @param stopAt the stopAt to set
+   */
+  public void setStopAt(Date stopAt) {
+    this.stopAt = stopAt;
   }
 
 }

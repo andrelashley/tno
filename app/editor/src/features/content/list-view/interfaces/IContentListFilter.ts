@@ -3,13 +3,14 @@ import { IOptionItem } from 'components';
 export interface IContentListFilter {
   pageIndex: number;
   pageSize: number;
-  mediaTypeId: number | '';
+  mediaTypeId: number;
+  contentTypeId: number;
   ownerId: number | '';
   userId: number | '';
   timeFrame: IOptionItem;
-  isPrintContent: boolean;
-  included: boolean;
-  onTicker: boolean;
-  commentary: boolean;
-  topStory: boolean;
+  // Actions
+  included: string;
+  onTicker: string;
+  commentary: string;
+  topStory: string;
 }

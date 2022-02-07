@@ -25,7 +25,6 @@ import ca.bc.gov.tno.dal.db.services.interfaces.IContentCategoryService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentTagService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentToneService;
-import ca.bc.gov.tno.dal.db.services.interfaces.IUserService;
 import ca.bc.gov.tno.models.Paged;
 import ca.bc.gov.tno.models.interfaces.IPaged;
 
@@ -42,7 +41,6 @@ public class ContentService implements IContentService {
   private final IContentTagService contentTagService;
   private final IContentCategoryService contentCategoryService;
   private final IContentToneService contentToneService;
-  private final IUserService userService;
 
   /**
    * Creates a new instance of a ContentService object, initializes with
@@ -54,20 +52,17 @@ public class ContentService implements IContentService {
    * @param contentTagService      The content tag service.
    * @param contentCategoryService The content category service.
    * @param contentToneService     The content tone pool service.
-   * @param userService            The user service.
    */
   @Autowired
   public ContentService(final SessionFactory sessionFactory, final IContentRepository repository,
       final IContentActionService contentActionService, final IContentTagService contentTagService,
-      final IContentCategoryService contentCategoryService, final IContentToneService contentToneService,
-      final IUserService userService) {
+      final IContentCategoryService contentCategoryService, final IContentToneService contentToneService) {
     this.sessionFactory = sessionFactory;
     this.repository = repository;
     this.contentActionService = contentActionService;
     this.contentTagService = contentTagService;
     this.contentCategoryService = contentCategoryService;
     this.contentToneService = contentToneService;
-    this.userService = userService;
   }
 
   /**
@@ -94,70 +89,17 @@ public class ContentService implements IContentService {
     page = page < 1 ? 1 : page;
     quantity = quantity < 1 ? 10 : quantity;
 
-    if (sort == null || sort.length == 0)
-      sort = new SortParam[] {
-          new SortParam("content", "createdOn", SortDirection.Descending),
-          new SortParam("content", "updatedOn", SortDirection.Descending),
-          new SortParam("content", "source", SortDirection.Ascending),
-          new SortParam("content", "headline", SortDirection.Ascending) };
-
     var session = sessionFactory.getCurrentSession();
     var ts = session.beginTransaction();
 
-    // var userFilter = filter != null ? (FilterParam<?>)
-    // filter.getFilters().stream()
-    // .filter((f) -> ((FilterParam<?>)
-    // f).getColumn().equals("userId")).findAny().orElse(null) : null;
-
-    // TODO: Switch to parameters.
-    StringBuilder where = new StringBuilder();
-    if (filter != null && filter.getFilters().size() > 0) {
-      where.append(" WHERE");
-      var filters = filter.getFilters();
-      var first = true;
-      for (Object op : filters) {
-        var param = (FilterParam<?>) op;
-
-        // Filter 'userId' is a special use-case. It will look for content the user
-        // owns, created, or edited.
-        if (param.getColumn().equals("userId")) {
-          where
-              .append(String.format("%s %s", (!first ? " AND" : ""), "content.ownerId=" + param.getValue().toString()));
-        } else {
-          where.append(String.format("%s %s", (!first ? " AND" : ""), param.toString("content")));
-        }
-        first = false;
-      }
-    }
-
     try {
-      var order = " ORDER BY "
-          + String.join(", ", Arrays.stream(sort).map(s -> s.toString("content")).toArray(String[]::new));
-      var pageSql = """
-          SELECT DISTINCT content FROM Content content
-          JOIN FETCH content.contentType AS contentType
-          JOIN FETCH content.mediaType AS mediaType
-          JOIN FETCH content.license AS license
-          LEFT JOIN FETCH content.printContent AS print
-          LEFT JOIN FETCH content.owner AS owner
-          LEFT JOIN FETCH content.dataSource AS dataSource
-          """ + where.toString() + order;
-
-      var pageQuery = session.createQuery(pageSql)
+      var pageQuery = session
+          .createQuery(generateFindHsql("DISTINCT content", filter, sort, true))
           .setFirstResult((page - 1) * quantity)
           .setMaxResults(quantity);
+      var totalQuery = session.createQuery(generateFindHsql("COUNT(*)", filter, sort, false));
 
-      // if (userFilter != null) {
-      // Get the user key for the specified 'userId' filter value.
-      // var user = userService.findById((Integer)
-      // userFilter.getValue()).orElseThrow();
-      // pageQuery.setParameter("userId", userFilter.getValue());
-      // pageQuery.setParameter("username", user.getUsername());
-      // }
       var items = pageQuery.getResultList();
-
-      var totalSql = "SELECT COUNT(*) FROM Content content" + where.toString();
-      var totalQuery = session.createQuery(totalSql);
       var total = (long) totalQuery.uniqueResult();
 
       return new Paged<Content>(ListHelper.castList(Content.class, items), page, quantity, total);
@@ -165,6 +107,79 @@ public class ContentService implements IContentService {
       ts.commit();
       session.close();
     }
+  }
+
+  /**
+   * Generate an HSQL join statements for the content find.
+   * 
+   * @param select  What you want to select from Content. 'SELECT {select} FROM
+   *                Content'.
+   * @param filter  FilterCollection object.
+   * @param sort    An array of sort params.
+   * @param doFetch Whether to include the fetch statement. Only fetch when
+   *                returning content.
+   * @return HSQL join statement string.
+   */
+  private String generateFindHsql(String select, FilterCollection filter, SortParam[] sort, boolean doFetch) {
+    var hasUser = filter != null ? filter
+        .getFilters().stream()
+        .anyMatch((f) -> ((FilterParam<?>) f).getColumn().equals("userId")) : false;
+    var hasActions = filter != null ? filter
+        .getFilters().stream()
+        .anyMatch((f) -> ((FilterParam<?>) f).getTable().equals("action")) : false;
+
+    // TODO: Switch to parameters.
+    StringBuilder where = new StringBuilder();
+    if (filter != null && filter.getFilters().size() > 0) {
+      where.append("WHERE");
+      var filters = filter.getFilters();
+      var first = true;
+      for (Object op : filters) {
+        var param = (FilterParam<?>) op;
+
+        // Filter 'userId' checks time tracking too.
+        if (param.getColumn().equals("userId")) {
+          where.append(String.format("%s (content.ownerId=%s OR %s)\n", (!first ? " AND" : ""), param.getValue(),
+              param.toString("content")));
+        } else {
+          where.append(String.format("%s %s\n", (!first ? " AND" : ""), param.toString("content")));
+        }
+        first = false;
+      }
+    }
+
+    // Default sorting.
+    if (sort == null || sort.length == 0)
+      sort = new SortParam[] {
+          new SortParam("content", "createdOn", SortDirection.Descending),
+          new SortParam("content", "updatedOn", SortDirection.Descending),
+          new SortParam("content", "source", SortDirection.Ascending),
+          new SortParam("content", "headline", SortDirection.Ascending) };
+    var order = "ORDER BY "
+        + String.join(", ", Arrays.stream(sort).map(s -> s.toString("content")).toArray(String[]::new));
+
+    var hsql = new StringBuilder();
+    hsql.append(String.format("SELECT %s FROM Content content\n", select));
+    hsql.append(String.format("JOIN%s content.contentType AS contentType\n", doFetch ? " FETCH" : ""));
+    hsql.append(String.format("JOIN%s content.mediaType AS mediaType\n", doFetch ? " FETCH" : ""));
+    hsql.append(String.format("JOIN%s content.license AS license\n", doFetch ? " FETCH" : ""));
+    hsql.append(String.format("LEFT JOIN%s content.printContent AS print\n", doFetch ? " FETCH" : ""));
+    hsql.append(String.format("LEFT JOIN%s content.owner AS owner\n", doFetch ? " FETCH" : ""));
+    hsql.append(String.format("LEFT JOIN%s content.dataSource AS dataSource\n", doFetch ? " FETCH" : ""));
+
+    if (hasUser)
+      hsql.append("LEFT JOIN content.timeTrackings as timeTracking\n");
+    if (hasActions)
+      hsql.append("""
+          LEFT JOIN content.contentActions as contentActions
+          LEFT JOIN contentActions.action as action
+          """);
+
+    hsql.append(where.toString());
+    if (doFetch)
+      hsql.append(order);
+
+    return hsql.toString();
   }
 
   /**

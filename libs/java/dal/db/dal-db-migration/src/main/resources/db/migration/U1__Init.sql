@@ -10,6 +10,7 @@ DROP TABLE public.content_link;
 DROP TABLE public.print_content;
 DROP TABLE public.content_log;
 DROP TABLE public.content;
+DROP TABLE public.data_source_schedule;
 DROP TABLE public.data_source;
 DROP TABLE public.schedule;
 DROP TABLE public.series;

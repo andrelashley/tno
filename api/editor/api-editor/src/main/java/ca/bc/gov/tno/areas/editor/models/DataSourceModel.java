@@ -1,7 +1,9 @@
 package ca.bc.gov.tno.areas.editor.models;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import ca.bc.gov.tno.dal.db.entities.DataSource;
@@ -78,6 +80,11 @@ public class DataSourceModel {
    */
   private Map<String, Object> connection = new HashMap<>();
 
+  /**
+   * An array of schedules associated with this data source.
+   */
+  private List<ScheduleModel> schedules = new ArrayList<>();
+
   public DataSourceModel() {
   }
 
@@ -90,11 +97,12 @@ public class DataSourceModel {
     this.mediaType = new MediaTypeModel(entity.getMediaType());
     this.licenseId = entity.getLicenseId();
     this.license = new LicenseModel(entity.getLicense());
-    this.scheduleId = entity.getScheduleId();
-    this.schedule = new ScheduleModel(entity.getSchedule());
     this.topic = entity.getTopic();
     this.lastRanOn = entity.getLastRanOn();
     this.connection = entity.getConnection();
+    this.schedules
+        .addAll(entity.getDataSourceSchedules().stream().filter((dss) -> dss.getSchedule() != null)
+            .map((dss) -> new ScheduleModel(dss.getSchedule())).toList());
   }
 
   /**
@@ -126,6 +134,20 @@ public class DataSourceModel {
   }
 
   /**
+   * @return String return the code
+   */
+  public String getCode() {
+    return code;
+  }
+
+  /**
+   * @param code the code to set
+   */
+  public void setCode(String code) {
+    this.code = code;
+  }
+
+  /**
    * @return String return the description
    */
   public String getDescription() {
@@ -151,6 +173,111 @@ public class DataSourceModel {
    */
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  /**
+   * @return int return the mediaTypeId
+   */
+  public int getMediaTypeId() {
+    return mediaTypeId;
+  }
+
+  /**
+   * @param mediaTypeId the mediaTypeId to set
+   */
+  public void setMediaTypeId(int mediaTypeId) {
+    this.mediaTypeId = mediaTypeId;
+  }
+
+  /**
+   * @return MediaTypeModel return the mediaType
+   */
+  public MediaTypeModel getMediaType() {
+    return mediaType;
+  }
+
+  /**
+   * @param mediaType the mediaType to set
+   */
+  public void setMediaType(MediaTypeModel mediaType) {
+    this.mediaType = mediaType;
+  }
+
+  /**
+   * @return int return the licenseId
+   */
+  public int getLicenseId() {
+    return licenseId;
+  }
+
+  /**
+   * @param licenseId the licenseId to set
+   */
+  public void setLicenseId(int licenseId) {
+    this.licenseId = licenseId;
+  }
+
+  /**
+   * @param license the license to set
+   */
+  public void setLicense(LicenseModel license) {
+    this.license = license;
+  }
+
+  /**
+   * @return int return the scheduleId
+   */
+  public int getScheduleId() {
+    return scheduleId;
+  }
+
+  /**
+   * @param scheduleId the scheduleId to set
+   */
+  public void setScheduleId(int scheduleId) {
+    this.scheduleId = scheduleId;
+  }
+
+  /**
+   * @param schedule the schedule to set
+   */
+  public void setSchedule(ScheduleModel schedule) {
+    this.schedule = schedule;
+  }
+
+  /**
+   * @param topic the topic to set
+   */
+  public void setTopic(String topic) {
+    this.topic = topic;
+  }
+
+  /**
+   * @param lastRanOn the lastRanOn to set
+   */
+  public void setLastRanOn(Date lastRanOn) {
+    this.lastRanOn = lastRanOn;
+  }
+
+  /**
+   * @param connection the connection to set
+   */
+  public void setConnection(Map<String, Object> connection) {
+    this.connection = connection;
+  }
+
+  /**
+   * @return List<ScheduleModel> return the schedules
+   */
+  public List<ScheduleModel> getSchedules() {
+    return schedules;
+  }
+
+  /**
+   * @param schedules the schedules to set
+   */
+  public void setSchedules(List<ScheduleModel> schedules) {
+    this.schedules = schedules;
   }
 
 }

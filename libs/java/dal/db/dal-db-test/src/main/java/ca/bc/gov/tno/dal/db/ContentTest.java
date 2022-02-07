@@ -13,14 +13,17 @@ import ca.bc.gov.tno.dal.db.entities.ContentAction;
 import ca.bc.gov.tno.dal.db.entities.ContentCategory;
 import ca.bc.gov.tno.dal.db.entities.ContentTag;
 import ca.bc.gov.tno.dal.db.entities.ContentTone;
+import ca.bc.gov.tno.dal.db.entities.TimeTracking;
 import ca.bc.gov.tno.dal.db.models.FilterCollection;
 import ca.bc.gov.tno.dal.db.models.LogicalOperators;
 import ca.bc.gov.tno.dal.db.models.SortParam;
+import ca.bc.gov.tno.dal.db.services.interfaces.IActionService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentTypeService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IDataSourceService;
 import ca.bc.gov.tno.dal.db.services.interfaces.ILicenseService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IMediaTypeService;
+import ca.bc.gov.tno.dal.db.services.interfaces.ITimeTrackingService;
 import ca.bc.gov.tno.dal.db.services.interfaces.IUserService;
 
 @Component
@@ -31,17 +34,22 @@ public class ContentTest {
   ILicenseService licenseService;
   IDataSourceService dataSourceService;
   IUserService userService;
+  IActionService actionService;
+  ITimeTrackingService timeTrackingService;
 
   @Autowired
   public ContentTest(final IContentService contentService, final IContentTypeService contentTypeService,
       final IMediaTypeService mediaTypeService, final ILicenseService licenseService,
-      final IDataSourceService dataSourceService, final IUserService userService) {
+      final IDataSourceService dataSourceService, final IUserService userService,
+      final IActionService actionService, ITimeTrackingService timeTrackingService) {
     this.contentService = contentService;
     this.contentTypeService = contentTypeService;
     this.mediaTypeService = mediaTypeService;
     this.licenseService = licenseService;
     this.dataSourceService = dataSourceService;
     this.userService = userService;
+    this.actionService = actionService;
+    this.timeTrackingService = timeTrackingService;
   }
 
   public void Run() {
@@ -148,6 +156,7 @@ public class ContentTest {
     var license = licenseService.findById(1).get(); // 90
     // var dataSource = dataSourceService.findById(1).get();
     var user = userService.findById(1).get(); // Admin
+    var action = actionService.findById(1).get();
 
     var c1 = contentService
         .add(new Content(contentType, mediaType, license, null, "S1", user, ContentStatus.Published, "headline 1"));
@@ -157,47 +166,68 @@ public class ContentTest {
         .add(new Content(contentType, mediaType, license, null, "S2", user, ContentStatus.Publish,
             "another title 3"));
 
-    var result = contentService.find(1, 2, null, null);
+    var c4 = new Content(contentType, mediaType, license, null, "Action", user, ContentStatus.Published,
+        "action content");
+    c4.getContentActions().add(new ContentAction(c4, action));
+    c4 = contentService.add(c4);
 
-    if (result.getItems().size() != 2)
-      throw new IllegalStateException("Result should return 2 items");
-    if (result.getPage() != 1)
-      throw new IllegalStateException("Property 'page' should be 1");
-    if (result.getQuantity() != 2)
-      throw new IllegalStateException("Property 'quantity' should be 2");
-    if (result.getTotal() == 0)
-      throw new IllegalStateException("Property 'total' should not be 0");
-    if (result.getItems().get(0).getContentType() == null)
-      throw new IllegalStateException("Property 'contentType' should not be null");
-    if (result.getItems().get(0).getLicense() == null)
-      throw new IllegalStateException("Property 'license' should not be null");
-    if (result.getItems().get(0).getMediaType() == null)
-      throw new IllegalStateException("Property 'mediaType' should not be null");
-    if (result.getItems().get(0).getOwner() == null)
-      throw new IllegalStateException("Property 'owner' should not be null");
+    var user2 = userService.findById(2).get(); // Editor
+    var c5 = contentService
+        .add(new Content(contentType, mediaType, license, null, "u2", user2, ContentStatus.Publish,
+            "another title 3"));
+    timeTrackingService.add(new TimeTracking(c5, user2, 3.5f, "Updated"));
 
-    var filter = new FilterCollection();
-    filter.addFilter("headline", LogicalOperators.Contains, "head");
-    filter.addFilter("source", LogicalOperators.Contains, "S");
-    filter.addFilter("mediaTypeId", LogicalOperators.Equals, 3);
-    filter.addFilter("createdOn", LogicalOperators.LessThanOrEqual, new Date());
-    var sort = new SortParam[] { new SortParam("id", SortDirection.Descending) };
-    result = contentService.find(1, 10, filter, sort);
+    try {
+      var result = contentService.find(1, 2, null, null);
+      if (result.getItems().size() != 2)
+        throw new IllegalStateException("Result should return 2 items");
+      if (result.getPage() != 1)
+        throw new IllegalStateException("Property 'page' should be 1");
+      if (result.getQuantity() != 2)
+        throw new IllegalStateException("Property 'quantity' should be 2");
+      if (result.getTotal() == 0)
+        throw new IllegalStateException("Property 'total' should not be 0");
+      if (result.getItems().get(0).getContentType() == null)
+        throw new IllegalStateException("Property 'contentType' should not be null");
+      if (result.getItems().get(0).getLicense() == null)
+        throw new IllegalStateException("Property 'license' should not be null");
+      if (result.getItems().get(0).getMediaType() == null)
+        throw new IllegalStateException("Property 'mediaType' should not be null");
+      if (result.getItems().get(0).getOwner() == null)
+        throw new IllegalStateException("Property 'owner' should not be null");
 
-    if (result.getItems().size() != 2)
-      throw new IllegalStateException("Result should return 2 items");
-    if (result.getTotal() != 2)
-      throw new IllegalStateException("Property 'total' should be 2");
-    if (result.getItems().get(0).getId() < result.getItems().get(1).getId())
-      throw new IllegalStateException("Sort should be descending on 'id'");
+      var filter = new FilterCollection();
+      filter.addFilter("headline", LogicalOperators.Contains, "head");
+      filter.addFilter("source", LogicalOperators.Contains, "S");
+      filter.addFilter("mediaTypeId", LogicalOperators.Equals, 3);
+      filter.addFilter("createdOn", LogicalOperators.LessThanOrEqual, new Date());
+      var sort = new SortParam[] { new SortParam("id", SortDirection.Descending) };
+      result = contentService.find(1, 10, filter, sort);
+      if (result.getItems().size() != 2)
+        throw new IllegalStateException("Result should return 2 items");
+      if (result.getTotal() != 2)
+        throw new IllegalStateException("Property 'total' should be 2");
+      if (result.getItems().get(0).getId() < result.getItems().get(1).getId())
+        throw new IllegalStateException("Sort should be descending on 'id'");
 
-    filter.addFilter("userId", LogicalOperators.Equals, 1);
-    result = contentService.find(1, 10, filter, sort);
-    if (result.getItems().get(0).getOwnerId() != 1)
-      throw new IllegalStateException("Results should belong to owner 1");
+      filter = new FilterCollection();
+      filter.addFilter("action", "name", LogicalOperators.Equals, action.getName());
+      result = contentService.find(1, 10, filter, sort);
+      if (result.getItems().size() != 1)
+        throw new IllegalStateException("Results should return 1 item");
 
-    contentService.delete(c1);
-    contentService.delete(c2);
-    contentService.delete(c3);
+      filter = new FilterCollection();
+      filter.addFilter("timeTracking", "userId", LogicalOperators.Equals, user2.getId());
+      filter.addFilter("ownerId", LogicalOperators.Equals, user2.getId());
+      result = contentService.find(1, 10, filter, sort);
+      if (result.getItems().get(0).getOwnerId() != user2.getId())
+        throw new IllegalStateException("Results should belong to owner 2");
+    } finally {
+      contentService.delete(c1);
+      contentService.delete(c2);
+      contentService.delete(c3);
+      contentService.delete(c4);
+      contentService.delete(c5);
+    }
   }
 }

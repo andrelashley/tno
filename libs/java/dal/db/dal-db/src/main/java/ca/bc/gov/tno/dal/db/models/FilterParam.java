@@ -113,9 +113,8 @@ public class FilterParam<T> {
   }
 
   /**
-   * Return the filter condition as a string.
-   * 
    * @param defaultTable The default table name.
+   * @return Return the filter condition as a string.
    */
   public String toString(String defaultTable) {
     if (this.type == String.class) {
