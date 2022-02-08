@@ -1,5 +1,7 @@
 package ca.bc.gov.tno.areas.editor.controllers;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import javax.annotation.security.RolesAllowed;
@@ -20,10 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 import ca.bc.gov.tno.dal.db.services.interfaces.IContentService;
 import ca.bc.gov.tno.areas.editor.models.ContentModel;
 import ca.bc.gov.tno.dal.db.ContentStatus;
+import ca.bc.gov.tno.dal.db.SortDirection;
 import ca.bc.gov.tno.dal.db.WorkflowStatus;
 import ca.bc.gov.tno.dal.db.entities.Content;
 import ca.bc.gov.tno.dal.db.models.FilterCollection;
 import ca.bc.gov.tno.dal.db.models.LogicalOperators;
+import ca.bc.gov.tno.dal.db.models.SortParam;
 import ca.bc.gov.tno.models.Paged;
 import ca.bc.gov.tno.models.interfaces.IPaged;
 
@@ -75,7 +79,8 @@ public class ContentController {
       @RequestParam(required = false) String edition,
       @RequestParam(required = false) String section,
       @RequestParam(required = false) String storyType,
-      @RequestParam(required = false) String byline) {
+      @RequestParam(required = false) String byline,
+      @RequestParam(required = false) String sort) {
 
     var filter = new FilterCollection();
     if (hasPage != null && hasPage == true)
@@ -137,7 +142,20 @@ public class ContentController {
     if (byline != null)
       filter.addFilter("print", "byline", logicalOperator, byline);
 
-    var results = contentService.find(page == null ? 1 : page, quantity == null ? 10 : quantity, filter, null);
+    // Sort By
+    var sortBy = new ArrayList<SortParam>();
+    if (sort != null && sort.length() > 0)
+      Arrays.stream(sort.split(",")).forEach((sb) -> {
+        var colDir = sb.split(" ");
+        var dir = colDir.length == 2 ? colDir[1] : "";
+        var table = "content";
+        if (colDir[0].equals("section"))
+          table = "print";
+        sortBy.add(new SortParam(table, colDir[0], dir));
+      });
+
+    var results = contentService.find(page == null ? 1 : page, quantity == null ? 10 : quantity, filter,
+        sortBy.toArray(SortParam[]::new));
     var paged = new Paged<ContentModel>(
         results.getItems().stream().map(c -> new ContentModel(c)).toList(),
         results.getPage(),

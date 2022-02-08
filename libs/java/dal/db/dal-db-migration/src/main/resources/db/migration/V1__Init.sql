@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS public.data_source
     "topic" VARCHAR(50) NOT NULL,
     "last_ran_on" TIMESTAMP WITH TIME ZONE,
     "connection" TEXT NOT NULL,
+    "parent_id" INT,
     -- "connection" JSON NOT NULL, -- Hibernate has issues with JSON types.
     -- Audit Columns
     "created_by_id" UUID NOT NULL,
@@ -211,7 +212,8 @@ CREATE TABLE IF NOT EXISTS public.data_source
     "updated_on" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "pk_data_source" PRIMARY KEY ("id"),
     CONSTRAINT "fk_media_type_data_source" FOREIGN KEY ("media_type_id") REFERENCES public.media_type ("id"),
-    CONSTRAINT "fk_license_data_source" FOREIGN KEY ("license_id") REFERENCES public.license ("id")
+    CONSTRAINT "fk_license_data_source" FOREIGN KEY ("license_id") REFERENCES public.license ("id"),
+    CONSTRAINT "fk_data_source_data_source" FOREIGN KEY ("parent_id") REFERENCES public.data_source ("id")
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_data_source_name" ON public.data_source ("name");
 CREATE UNIQUE INDEX IF NOT EXISTS "idx_data_source_code" ON public.data_source ("code");

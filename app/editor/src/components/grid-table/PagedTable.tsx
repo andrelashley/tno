@@ -1,4 +1,4 @@
-import { Column, Row } from 'react-table';
+import { Column, Row, SortingRule } from 'react-table';
 
 import { GridTable, IPage } from '.';
 
@@ -18,14 +18,29 @@ export interface IPagedTableProps<CT extends object = {}> {
   /**
    * Event fires when pageIndex or pageSize changes.
    */
-  onPageChange: (pageIndex: number, pageSize?: number) => void;
+  onChangePage: (pageIndex: number, pageSize?: number) => void;
+  /**
+   * The sort has changed.
+   */
+  onChangeSort?: (sortBy: Array<SortingRule<CT>>) => void;
+  /**
+   * Initial sorting rules.
+   */
+  sortBy?: Array<SortingRule<CT>>;
 }
 
+/**
+ * A PagedTable component creates a table with server-side paging and sorting.
+ * @param param0 Component properties.
+ * @returns A component that displays a page of data.
+ */
 export const PagedTable = <CT extends object>({
   page,
   columns,
   onRowClick,
-  onPageChange,
+  onChangePage,
+  onChangeSort,
+  sortBy,
 }: IPagedTableProps<CT>) => {
   return (
     <GridTable
@@ -37,8 +52,13 @@ export const PagedTable = <CT extends object>({
         pageSize: page.pageSize,
         pageCount: page.pageCount,
       }}
+      sorting={{
+        manualSortBy: true,
+        sortBy: sortBy,
+      }}
       onRowClick={onRowClick}
-      onPageChange={onPageChange}
+      onChangePage={onChangePage}
+      onChangeSort={onChangeSort}
     ></GridTable>
   );
 };

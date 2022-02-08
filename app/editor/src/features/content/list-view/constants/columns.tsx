@@ -15,18 +15,22 @@ const dateColumn = ({ value }: { value: IContentModel }) => {
 
 export const columns: Column<IContentModel>[] = [
   {
+    id: 'headline',
     Header: 'Headline',
     accessor: 'headline',
   },
   {
+    id: 'source',
     Header: 'Source',
     accessor: 'source',
   },
   {
+    id: 'mediaType',
     Header: 'Type',
     accessor: (row) => row.mediaType.name,
   },
   {
+    id: 'section',
     Header: 'Section/Page',
     accessor: (row) => {
       if (row.printContent?.section) return `${row.printContent.section}/${row.page}`;
@@ -34,19 +38,23 @@ export const columns: Column<IContentModel>[] = [
     },
   },
   {
+    id: 'ownerId',
     Header: 'Username',
     accessor: (row) => row.owner?.displayName,
   },
   {
+    id: 'status',
     Header: 'Status',
     accessor: (row) => row.status,
   },
   {
+    id: 'createdOn',
     Header: 'Date',
     accessor: (row) => row,
     Cell: dateColumn,
   },
   {
+    id: 'use',
     Header: 'Use',
     accessor: (row) =>
       row.status === ContentStatus.Publish || row.status === ContentStatus.Published,

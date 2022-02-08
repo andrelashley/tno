@@ -1,7 +1,7 @@
 import React from 'react';
-import { Column, Row, usePagination, useTable } from 'react-table';
+import { Column, Row, SortingRule, usePagination, useSortBy, useTable } from 'react-table';
 
-import { Pager } from '.';
+import { Pager, SortIndicator } from '.';
 import * as styled from './GridTableStyled';
 
 /**
@@ -23,7 +23,11 @@ export interface IGridTableProps<CT extends object = Record<string, unknown>> {
   /**
    * The page has changed.
    */
-  onPageChange?: (pageIndex: number, pageSize?: number) => void;
+  onChangePage?: (pageIndex: number, pageSize?: number) => void;
+  /**
+   * The sort has changed.
+   */
+  onChangeSort?: (sortBy: Array<SortingRule<CT>>) => void;
   /**
    * Whether to show the footer.
    */
@@ -50,6 +54,16 @@ export interface IGridTableProps<CT extends object = Record<string, unknown>> {
      */
     pageCount?: number;
   };
+  sorting?: {
+    /**
+     * Whether to manually manage sorting.
+     */
+    manualSortBy?: boolean;
+    /**
+     * Initial sorting rules.
+     */
+    sortBy?: Array<SortingRule<CT>>;
+  };
 }
 
 /**
@@ -61,9 +75,11 @@ export const GridTable = <T extends object>({
   columns,
   data,
   onRowClick,
-  onPageChange = () => {},
+  onChangePage = () => {},
+  onChangeSort = () => {},
   showFooter = false,
   paging,
+  sorting,
 }: IGridTableProps<T>) => {
   const {
     showPaging = true,
@@ -72,6 +88,7 @@ export const GridTable = <T extends object>({
     pageSize: initialPageSize = 10,
     pageCount: initialPageCount = -1,
   } = paging || {};
+  const { manualSortBy = false, sortBy: initialSortBy = [] } = sorting || {};
   const {
     getTableProps,
     getTableBodyProps,
@@ -87,18 +104,21 @@ export const GridTable = <T extends object>({
     nextPage,
     previousPage,
     setPageSize,
-    state: { pageIndex, pageSize },
+    state: { pageIndex, pageSize, sortBy },
   } = useTable(
     {
       columns,
       data,
       manualPagination,
+      manualSortBy: manualSortBy,
       pageCount: initialPageCount,
       initialState: {
         pageIndex: initialPageIndex,
         pageSize: initialPageSize,
+        sortBy: initialSortBy,
       },
     },
+    useSortBy,
     usePagination,
   );
   const [currentPage, setCurrentPage] = React.useState({ pageIndex, pageSize });
@@ -124,10 +144,14 @@ export const GridTable = <T extends object>({
   React.useEffect(() => {
     // Only notify parent if the change came internally.
     if (currentPage.pageIndex !== pageIndex || currentPage.pageSize !== pageSize) {
-      onPageChange(pageIndex, pageSize);
+      onChangePage(pageIndex, pageSize);
       setCurrentPage({ pageIndex, pageSize });
     }
-  }, [onPageChange, pageIndex, pageSize, currentPage]);
+  }, [onChangePage, pageIndex, pageSize, currentPage]);
+
+  React.useEffect(() => {
+    onChangeSort(sortBy);
+  }, [onChangeSort, sortBy]);
 
   return (
     <styled.GridTable {...getTableProps()}>
@@ -135,7 +159,10 @@ export const GridTable = <T extends object>({
         {headerGroups.map((headerGroup) => (
           <div role="rowgroup" {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column) => (
-              <div {...column.getHeaderProps()}>{column.render('Header')}</div>
+              <div {...column.getHeaderProps(column.getSortByToggleProps())}>
+                {column.render('Header')}
+                <SortIndicator column={column} />
+              </div>
             ))}
           </div>
         ))}

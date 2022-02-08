@@ -178,7 +178,7 @@ public class ContentTest {
     timeTrackingService.add(new TimeTracking(c5, user2, 3.5f, "Updated"));
 
     try {
-      var result = contentService.find(1, 2, null, null);
+      var result = contentService.find(1, 2, null, new SortParam[] { new SortParam("source") });
       if (result.getItems().size() != 2)
         throw new IllegalStateException("Result should return 2 items");
       if (result.getPage() != 1)
@@ -201,8 +201,7 @@ public class ContentTest {
       filter.addFilter("source", LogicalOperators.Contains, "S");
       filter.addFilter("mediaTypeId", LogicalOperators.Equals, 3);
       filter.addFilter("createdOn", LogicalOperators.LessThanOrEqual, new Date());
-      var sort = new SortParam[] { new SortParam("id", SortDirection.Descending) };
-      result = contentService.find(1, 10, filter, sort);
+      result = contentService.find(1, 10, filter, new SortParam[] { new SortParam("id", SortDirection.Descending) });
       if (result.getItems().size() != 2)
         throw new IllegalStateException("Result should return 2 items");
       if (result.getTotal() != 2)
@@ -212,14 +211,14 @@ public class ContentTest {
 
       filter = new FilterCollection();
       filter.addFilter("action", "name", LogicalOperators.Equals, action.getName());
-      result = contentService.find(1, 10, filter, sort);
+      result = contentService.find(1, 10, filter, null);
       if (result.getItems().size() != 1)
         throw new IllegalStateException("Results should return 1 item");
 
       filter = new FilterCollection();
       filter.addFilter("timeTracking", "userId", LogicalOperators.Equals, user2.getId());
       filter.addFilter("ownerId", LogicalOperators.Equals, user2.getId());
-      result = contentService.find(1, 10, filter, sort);
+      result = contentService.find(1, 10, filter, null);
       if (result.getItems().get(0).getOwnerId() != user2.getId())
         throw new IllegalStateException("Results should belong to owner 2");
     } finally {

@@ -50,6 +50,44 @@ public final class SortParam {
    * @param column    The column name.
    * @param direction The sorting order.
    */
+  public SortParam(final String table, final String column, final String direction) {
+    if (table == null)
+      throw new NullPointerException("Parameter 'table' cannot be null.");
+    if (column == null)
+      throw new NullPointerException("Parameter 'column' cannot be null.");
+    if (column.length() == 0)
+      throw new IllegalArgumentException("Parameter 'column' cannot be empty.");
+
+    var dir = direction == null ? "" : direction;
+
+    this.table = table.replaceAll("\\s+", "");
+    this.column = column.replaceAll("\\s+", "");
+
+    switch (dir.toLowerCase()) {
+      case "d":
+      case "desc":
+      case "descend":
+      case "descending":
+        this.direction = SortDirection.Descending;
+        break;
+      case "a":
+      case "asc":
+      case "ascend":
+      case "ascending":
+      default:
+        this.direction = SortDirection.Ascending;
+        break;
+    }
+  }
+
+  /**
+   * Creates new instance of a SortParam object, initializes with specified
+   * parameters.
+   * 
+   * @param table     The table name.
+   * @param column    The column name.
+   * @param direction The sorting order.
+   */
   public SortParam(final String table, final String column, final SortDirection direction) {
     if (table == null)
       throw new NullPointerException("Parameter 'table' cannot be null.");

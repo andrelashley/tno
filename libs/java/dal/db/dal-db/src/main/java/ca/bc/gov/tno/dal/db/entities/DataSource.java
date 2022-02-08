@@ -114,6 +114,19 @@ public class DataSource extends AuditColumns {
   private Map<String, Object> connection = new HashMap<>();
 
   /**
+   * Foreign key to parent data source.
+   */
+  @Column(name = "parent_id", nullable = true)
+  private Integer parentId;
+
+  /**
+   * Reference to the parent data source.
+   */
+  @ManyToOne(fetch = FetchType.EAGER)
+  @JoinColumn(name = "parent_id", insertable = false, updatable = false)
+  private DataSource parent;
+
+  /**
    * A collection of data source schedules linked to this data source.
    */
   @JsonBackReference("data_source_schedules")
@@ -349,6 +362,34 @@ public class DataSource extends AuditColumns {
    */
   public void setDataSourceSchedules(List<DataSourceSchedule> dataSourceSchedules) {
     this.dataSourceSchedules = dataSourceSchedules;
+  }
+
+  /**
+   * @return Integer return the parentId
+   */
+  public Integer getParentId() {
+    return parentId;
+  }
+
+  /**
+   * @param parentId the parentId to set
+   */
+  public void setParentId(Integer parentId) {
+    this.parentId = parentId;
+  }
+
+  /**
+   * @return DataSource return the parent
+   */
+  public DataSource getParent() {
+    return parent;
+  }
+
+  /**
+   * @param parent the parent to set
+   */
+  public void setParent(DataSource parent) {
+    this.parent = parent;
   }
 
 }

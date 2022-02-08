@@ -15,6 +15,7 @@ import {
 import { IContentModel, LogicalOperator, useApiEditor } from 'hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { SortingRule } from 'react-table';
 import { useKeycloakWrapper } from 'tno-core';
 
 import { columns, fieldTypes, logicalOperators, timeFrames } from './constants';
@@ -56,6 +57,7 @@ export const ContentListView: React.FC = () => {
   const [page, setPage] = React.useState(defaultPage);
   const [listFilter, setListFilter] = React.useState(defaultListFilter);
   const [listFilterAdvanced, setListFilterAdvanced] = React.useState(defaultListAdvancedFilter);
+  const [sortBy, setSortBy] = React.useState<Array<SortingRule<IContentModel>>>([]);
   const keycloak = useKeycloakWrapper();
   const navigate = useNavigate();
   const api = useApiEditor();
@@ -105,16 +107,24 @@ export const ContentListView: React.FC = () => {
   );
 
   React.useEffect(() => {
-    fetch({ ...listFilter, ...listFilterAdvanced });
+    fetch({ ...listFilter, ...listFilterAdvanced, sortBy });
     // We don't want a render when the advanced filter changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetch, listFilter]);
+  }, [fetch, listFilter, sortBy]);
 
-  const handlePageChange = (pi: number, ps?: number) => {
-    if (listFilter.pageIndex !== pi) setListFilter({ ...listFilter, pageIndex: pi });
-    if (listFilter.pageSize !== ps)
-      setListFilter({ ...listFilter, pageSize: ps ?? defaultListFilter.pageSize });
-  };
+  const handleChangePage = React.useCallback(
+    (pi: number, ps?: number) => {
+      if (listFilter.pageIndex !== pi) setListFilter({ ...listFilter, pageIndex: pi });
+      if (listFilter.pageSize !== ps)
+        setListFilter({ ...listFilter, pageSize: ps ?? defaultListFilter.pageSize });
+    },
+    [listFilter],
+  );
+
+  const handleChangeSort = React.useCallback((sortBy: Array<SortingRule<IContentModel>>) => {
+    console.debug(sortBy);
+    setSortBy(sortBy);
+  }, []);
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const value = +e.target.value;
@@ -319,8 +329,10 @@ export const ContentListView: React.FC = () => {
         <PagedTable
           columns={columns}
           page={page}
+          sortBy={sortBy}
           onRowClick={(row) => navigate(`/contents/${row.id}`)}
-          onPageChange={handlePageChange}
+          onChangePage={handleChangePage}
+          onChangeSort={handleChangeSort}
         ></PagedTable>
       </div>
       <div className="content-actions">

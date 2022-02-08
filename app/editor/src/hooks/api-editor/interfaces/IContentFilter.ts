@@ -21,4 +21,5 @@ export interface IContentFilter {
   publishedEndOn?: string;
   actions?: string[];
   logicalOperator?: LogicalOperator;
+  sort?: string[];
 }
