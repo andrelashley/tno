@@ -14,4 +14,12 @@ export class OptionItem implements IOptionItem {
   static create(label: string, value: string | number): IOptionItem {
     return new OptionItem(label, value);
   }
+
+  toInterface(): IOptionItem {
+    return {
+      discriminator: this.discriminator,
+      label: this.label,
+      value: this.value,
+    };
+  }
 }

@@ -5,6 +5,6 @@ export interface IContentListAdvancedFilter {
   fieldType: IOptionItem;
   logicalOperator: LogicalOperator | '';
   searchTerm: string;
-  startDate?: Date | null;
-  endDate?: Date | null;
+  startDate?: string | null;
+  endDate?: string | null;
 }

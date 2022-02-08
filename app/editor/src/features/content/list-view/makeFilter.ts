@@ -1,4 +1,5 @@
 import { IContentFilter } from 'hooks';
+import moment from 'moment';
 
 import { IContentListAdvancedFilter, IContentListFilter } from './interfaces';
 import { setTimeFrame } from './setTimeFrame';
@@ -17,11 +18,12 @@ export const makeFilter = (
   return {
     mediaTypeId: +filter.mediaTypeId > 0 ? +filter.mediaTypeId : undefined,
     ownerId: +filter.ownerId > 0 ? +filter.ownerId : undefined,
+    userId: +filter.userId > 0 ? +filter.userId : undefined,
     contentTypeId: filter.contentTypeId !== 0 ? filter.contentTypeId : undefined,
     createdStartOn: advanced.startDate
-      ? advanced.startDate.toISOString()
+      ? moment(advanced.startDate).toISOString()
       : setTimeFrame(filter.timeFrame.value as number)?.toISOString(),
-    createdEndOn: advanced.endDate ? advanced.endDate.toISOString() : undefined,
+    createdEndOn: advanced.endDate ? moment(advanced.endDate).toISOString() : undefined,
     [(advanced?.fieldType?.value as string) ?? 'fake']:
       advanced.searchTerm !== '' ? advanced.searchTerm : undefined,
     logicalOperator:
@@ -55,7 +57,7 @@ const applyActions = (filter: IContentListFilter) => {
  * @returns An array of sort parameters.
  */
 const applySortBy = (sortBy?: { id: string; desc: boolean }[]) => {
-  if (sortBy === undefined || sortBy.length == 0) return undefined;
+  if (sortBy === undefined || sortBy.length === 0) return undefined;
 
   var sort: string[] = [];
   for (let i = 0; i < sortBy.length; i++) {

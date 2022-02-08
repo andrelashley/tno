@@ -38,6 +38,11 @@ export const ContentListView = styled.div`
 
     .dateRange {
     }
+
+    .action-filters {
+      display: flex;
+      flex-direction: row;
+    }
   }
 
   .content-list {

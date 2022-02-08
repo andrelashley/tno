@@ -16,32 +16,13 @@ import { IContentModel, LogicalOperator, useApiEditor } from 'hooks';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SortingRule } from 'react-table';
+import { initialContentState, useContentStore, useLookup } from 'store/slices';
 import { useKeycloakWrapper } from 'tno-core';
 
 import { columns, fieldTypes, logicalOperators, timeFrames } from './constants';
 import * as styled from './ContentListViewStyled';
-import { IContentListAdvancedFilter, IContentListFilter } from './interfaces';
+import { IContentListFilter } from './interfaces';
 import { makeFilter } from './makeFilter';
-
-const defaultListFilter: IContentListFilter = {
-  pageIndex: 0,
-  pageSize: 10,
-  mediaTypeId: 0,
-  contentTypeId: 0,
-  ownerId: '',
-  userId: '',
-  timeFrame: timeFrames[0],
-  included: '',
-  onTicker: '',
-  commentary: '',
-  topStory: '',
-};
-
-const defaultListAdvancedFilter: IContentListAdvancedFilter = {
-  fieldType: fieldTypes[0],
-  logicalOperator: LogicalOperator.Contains,
-  searchTerm: '',
-};
 
 const defaultPage: IPage<IContentModel> = {
   pageIndex: 0,
@@ -51,45 +32,74 @@ const defaultPage: IPage<IContentModel> = {
 };
 
 export const ContentListView: React.FC = () => {
-  const [mediaTypes, setMediaTypes] = React.useState<IOptionItem[]>([]);
-  const [contentTypes, setContentTypes] = React.useState<IOptionItem[]>([]);
-  const [users, setUsers] = React.useState<IOptionItem[]>([]);
+  const {
+    storeContentTypes,
+    storeMediaTypes,
+    storeUsers,
+    state: { contentTypes, mediaTypes, users },
+  } = useLookup();
+  const {
+    storeFilter,
+    storeFilterAdvanced,
+    storeSortBy,
+    state: { filter, filterAdvanced, sortBy },
+  } = useContentStore();
+
+  const [mediaTypeOptions, setMediaTypes] = React.useState<IOptionItem[]>([]);
+  const [contentTypeOptions, setContentTypes] = React.useState<IOptionItem[]>([]);
+  const [userOptions, setUsers] = React.useState<IOptionItem[]>([]);
   const [page, setPage] = React.useState(defaultPage);
-  const [listFilter, setListFilter] = React.useState(defaultListFilter);
-  const [listFilterAdvanced, setListFilterAdvanced] = React.useState(defaultListAdvancedFilter);
-  const [sortBy, setSortBy] = React.useState<Array<SortingRule<IContentModel>>>([]);
   const keycloak = useKeycloakWrapper();
+  const [username, setUsername] = React.useState(keycloak.instance.tokenParsed.username);
   const navigate = useNavigate();
   const api = useApiEditor();
 
-  const username = keycloak.instance.tokenParsed.username; // TODO: switch to user.id when keycloak is setup.
-  const printContentId = (contentTypes.find((ct) => ct.label === 'Print')?.value ?? 0) as number;
+  const currentUsername = keycloak.instance.tokenParsed.username;
+  const currentUserId = filter.userId;
+  const printContentId = (contentTypeOptions.find((ct) => ct.label === 'Print')?.value ??
+    0) as number;
 
   React.useEffect(() => {
-    // TODO: Redux user values.
-    api.getUsers().then((data) => {
-      setUsers(
-        [new OptionItem('All Users', 0)].concat(
-          data.map((u) => new OptionItem(u.displayName, u.id)),
-        ),
-      );
-      // TODO: Add user.id to keycloak.
-      const currentUserId = data.find((u) => u.username === username)?.id ?? 0;
-      setListFilter((filter) => ({ ...filter, ownerId: currentUserId }));
-    });
-  }, [api, username]);
+    if (users.length === 0) {
+      api.getUsers().then((data) => {
+        storeUsers(data);
+      });
+    }
 
-  React.useEffect(() => {
-    // TODO: Redux media types.
-    api.getMediaTypes().then((data) => {
-      setMediaTypes(
-        [new OptionItem('All Media', 0)].concat(data.map((m) => new OptionItem(m.name, m.id))),
-      );
-    });
-    api.getContentTypes().then((data) => {
-      setContentTypes(data.map((m) => new OptionItem(m.name, m.id)));
-    });
+    if (contentTypes.length === 0) {
+      api.getContentTypes().then((data) => {
+        storeContentTypes(data);
+      });
+    }
+
+    if (mediaTypes.length === 0) {
+      api.getMediaTypes().then((data) => {
+        storeMediaTypes(data);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api]);
+
+  React.useEffect(() => {
+    // TODO: switch to user.id when keycloak is setup.
+    setUsername(currentUsername);
+    if (currentUserId === '') {
+      const currentUserId = users.find((u) => u.username === username)?.id ?? 0;
+      storeFilter((filter: IContentListFilter) => ({ ...filter, userId: currentUserId }));
+    }
+  }, [currentUserId, currentUsername, storeFilter, username, users]);
+
+  React.useEffect(() => {
+    setContentTypes(contentTypes.map((m) => new OptionItem(m.name, m.id)));
+    setMediaTypes(
+      [new OptionItem('All Media', 0)].concat(mediaTypes.map((m) => new OptionItem(m.name, m.id))),
+    );
+    setUsers(
+      [new OptionItem('All Users', 0)].concat(
+        users.map((u) => new OptionItem(u.displayName, u.id)),
+      ),
+    );
+  }, [contentTypes, mediaTypes, users]);
 
   const fetch = React.useCallback(
     async (filter) => {
@@ -107,31 +117,34 @@ export const ContentListView: React.FC = () => {
   );
 
   React.useEffect(() => {
-    fetch({ ...listFilter, ...listFilterAdvanced, sortBy });
+    fetch({ ...filter, ...filterAdvanced, sortBy });
     // We don't want a render when the advanced filter changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetch, listFilter, sortBy]);
+  }, [fetch, filter, sortBy]);
 
   const handleChangePage = React.useCallback(
     (pi: number, ps?: number) => {
-      if (listFilter.pageIndex !== pi) setListFilter({ ...listFilter, pageIndex: pi });
-      if (listFilter.pageSize !== ps)
-        setListFilter({ ...listFilter, pageSize: ps ?? defaultListFilter.pageSize });
+      if (filter.pageIndex !== pi) storeFilter({ ...filter, pageIndex: pi });
+      if (filter.pageSize !== ps)
+        storeFilter({ ...filter, pageSize: ps ?? initialContentState.filter.pageSize });
     },
-    [listFilter],
+    [filter, storeFilter],
   );
 
-  const handleChangeSort = React.useCallback((sortBy: Array<SortingRule<IContentModel>>) => {
-    console.debug(sortBy);
-    setSortBy(sortBy);
-  }, []);
+  const handleChangeSort = React.useCallback(
+    (sortBy: SortingRule<IContentModel>[]) => {
+      storeSortBy(sortBy.map((sb) => ({ id: sb.id, desc: sb.desc })));
+    },
+    [storeSortBy],
+  );
 
   const handleTimeChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     const value = +e.target.value;
-    setListFilter((filter) => ({
+    const timeFrame = timeFrames.find((tf) => tf.value === value);
+    storeFilter((filter: IContentListFilter) => ({
       ...filter,
       pageIndex: 0,
-      timeFrame: timeFrames.find((tf) => tf.value === value) ?? timeFrames[0],
+      timeFrame: timeFrame?.toInterface() ?? timeFrames[0].toInterface(),
     }));
   };
 
@@ -142,13 +155,13 @@ export const ContentListView: React.FC = () => {
           <Dropdown
             name="mediaType"
             label="Media Type"
-            options={mediaTypes}
-            value={mediaTypes.find((mt) => mt.value === listFilter.mediaTypeId)}
-            defaultValue={mediaTypes[0]}
+            options={mediaTypeOptions}
+            value={mediaTypeOptions.find((mt) => mt.value === filter.mediaTypeId)}
+            defaultValue={mediaTypeOptions[0]}
             onChange={(newValue) => {
               var mediaTypeId = (newValue as IOptionItem).value ?? 0;
-              setListFilter({
-                ...listFilter,
+              storeFilter({
+                ...filter,
                 pageIndex: 0,
                 mediaTypeId: mediaTypeId as number,
               });
@@ -157,14 +170,14 @@ export const ContentListView: React.FC = () => {
           <Dropdown
             name="user"
             label="User"
-            options={users}
-            value={users.find((u) => u.value === listFilter.ownerId)}
+            options={userOptions}
+            value={userOptions.find((u) => u.value === filter.userId)}
             onChange={(newValue) => {
-              var ownerId = (newValue as IOptionItem).value ?? '';
-              setListFilter({
-                ...listFilter,
+              var userId = (newValue as IOptionItem).value ?? '';
+              storeFilter({
+                ...filter,
                 pageIndex: 0,
-                ownerId: typeof ownerId === 'string' ? '' : ownerId,
+                userId: typeof userId === 'string' ? '' : userId,
               });
             }}
           />
@@ -172,79 +185,85 @@ export const ContentListView: React.FC = () => {
             name="timeFrame"
             label="Time Frame"
             tooltip="Date created"
-            value={listFilter.timeFrame}
+            value={filter.timeFrame}
             options={timeFrames}
             onChange={handleTimeChange}
-            disabled={!!listFilterAdvanced.startDate || !!listFilterAdvanced.endDate}
+            disabled={!!filterAdvanced.startDate || !!filterAdvanced.endDate}
           />
           <div className="frm-in chg">
             <label>Filters</label>
-            <Checkbox
-              name="isPrintContent"
-              label="Lois"
-              tooltip="Print Content"
-              value={printContentId}
-              checked={listFilter.contentTypeId !== 0}
-              onChange={(e) => {
-                setListFilter({
-                  ...listFilter,
-                  pageIndex: 0,
-                  contentTypeId: e.target.checked ? printContentId : 0,
-                });
-              }}
-            />
-            <Checkbox
-              name="included"
-              label="Included"
-              value="Included"
-              checked={listFilter.included !== ''}
-              onChange={(e) =>
-                setListFilter({
-                  ...listFilter,
-                  pageIndex: 0,
-                  included: e.target.checked ? e.target.value : '',
-                })
-              }
-            />
-            <Checkbox
-              name="ticker"
-              label="On Ticker"
-              value="On Ticker"
-              checked={listFilter.onTicker !== ''}
-              onChange={(e) =>
-                setListFilter({
-                  ...listFilter,
-                  pageIndex: 0,
-                  onTicker: e.target.checked ? e.target.value : '',
-                })
-              }
-            />
-            <Checkbox
-              name="commentary"
-              label="Commentary"
-              value="Commentary"
-              checked={listFilter.commentary !== ''}
-              onChange={(e) =>
-                setListFilter({
-                  ...listFilter,
-                  pageIndex: 0,
-                  commentary: e.target.checked ? e.target.value : '',
-                })
-              }
-            />
-            <Checkbox
-              name="topStory"
-              label="Top Story"
-              value="Top Story"
-              checked={listFilter.topStory !== ''}
-              onChange={(e) =>
-                setListFilter({
-                  ...listFilter,
-                  pageIndex: 0,
-                  topStory: e.target.checked ? e.target.value : '',
-                })
-              }
-            />
+            <div className="action-filters">
+              <div>
+                <Checkbox
+                  name="isPrintContent"
+                  label="Lois"
+                  tooltip="Print Content"
+                  value={printContentId}
+                  checked={filter.contentTypeId !== 0}
+                  onChange={(e) => {
+                    storeFilter({
+                      ...filter,
+                      pageIndex: 0,
+                      contentTypeId: e.target.checked ? printContentId : 0,
+                    });
+                  }}
+                />
+                <Checkbox
+                  name="included"
+                  label="Included"
+                  value="Included"
+                  checked={filter.included !== ''}
+                  onChange={(e) =>
+                    storeFilter({
+                      ...filter,
+                      pageIndex: 0,
+                      included: e.target.checked ? e.target.value : '',
+                    })
+                  }
+                />
+                <Checkbox
+                  name="ticker"
+                  label="On Ticker"
+                  value="On Ticker"
+                  checked={filter.onTicker !== ''}
+                  onChange={(e) =>
+                    storeFilter({
+                      ...filter,
+                      pageIndex: 0,
+                      onTicker: e.target.checked ? e.target.value : '',
+                    })
+                  }
+                />
+              </div>
+              <div>
+                <Checkbox
+                  name="commentary"
+                  label="Commentary"
+                  value="Commentary"
+                  checked={filter.commentary !== ''}
+                  onChange={(e) =>
+                    storeFilter({
+                      ...filter,
+                      pageIndex: 0,
+                      commentary: e.target.checked ? e.target.value : '',
+                    })
+                  }
+                />
+                <Checkbox
+                  name="topStory"
+                  label="Top Story"
+                  value="Top Story"
+                  checked={filter.topStory !== ''}
+                  onChange={(e) =>
+                    storeFilter({
+                      ...filter,
+                      pageIndex: 0,
+                      topStory: e.target.checked ? e.target.value : '',
+                    })
+                  }
+                />
+              </div>
+            </div>
           </div>
         </div>
         <div className="box">
@@ -254,9 +273,9 @@ export const ContentListView: React.FC = () => {
               name="fieldType"
               label="Field Type"
               options={fieldTypes}
-              value={listFilterAdvanced.fieldType}
+              value={filterAdvanced.fieldType}
               onChange={(newValue) => {
-                setListFilterAdvanced({ ...listFilterAdvanced, fieldType: newValue as OptionItem });
+                storeFilterAdvanced({ ...filterAdvanced, fieldType: newValue as IOptionItem });
               }}
             />
             <Dropdown
@@ -264,19 +283,21 @@ export const ContentListView: React.FC = () => {
               label="Logical Operator"
               options={logicalOperators}
               value={logicalOperators.find(
-                (lo) => (LogicalOperator as any)[lo.value] === listFilterAdvanced.logicalOperator,
+                (lo) => (LogicalOperator as any)[lo.value] === filterAdvanced.logicalOperator,
               )}
               onChange={(newValue) => {
-                const logicalOperator = (LogicalOperator as any)[(newValue as OptionItem).value];
-                setListFilterAdvanced({ ...listFilterAdvanced, logicalOperator });
+                const logicalOperator = (LogicalOperator as any)[
+                  (newValue as IOptionItem).value ?? 0
+                ];
+                storeFilterAdvanced({ ...filterAdvanced, logicalOperator });
               }}
             />
             <Text
               name="searchTerm"
               label="Search Terms"
-              value={listFilterAdvanced.searchTerm}
+              value={filterAdvanced.searchTerm}
               onChange={(e) => {
-                setListFilterAdvanced({ ...listFilterAdvanced, searchTerm: e.target.value.trim() });
+                storeFilterAdvanced({ ...filterAdvanced, searchTerm: e.target.value.trim() });
               }}
             ></Text>
           </div>
@@ -288,26 +309,36 @@ export const ContentListView: React.FC = () => {
               <SelectDate
                 name="startDate"
                 placeholderText="YYYY MM DD"
-                selected={listFilterAdvanced.startDate}
+                selected={
+                  !!filterAdvanced.startDate ? new Date(filterAdvanced.startDate) : undefined
+                }
                 showTimeSelect
                 dateFormat="Pp"
                 onChange={(date) =>
-                  setListFilterAdvanced({ ...listFilterAdvanced, startDate: date })
+                  storeFilterAdvanced({
+                    ...filterAdvanced,
+                    startDate: !!date ? date.toString() : undefined,
+                  })
                 }
               />
               <SelectDate
                 name="endDate"
                 placeholderText="YYYY MM DD"
-                selected={listFilterAdvanced.endDate}
+                selected={!!filterAdvanced.endDate ? new Date(filterAdvanced.endDate) : undefined}
                 showTimeSelect
                 dateFormat="Pp"
-                onChange={(date) => setListFilterAdvanced({ ...listFilterAdvanced, endDate: date })}
+                onChange={(date) =>
+                  storeFilterAdvanced({
+                    ...filterAdvanced,
+                    endDate: !!date ? date.toString() : undefined,
+                  })
+                }
               />
             </div>
           </div>
           <Button
             name="search"
-            onClick={() => fetch({ ...listFilter, pageIndex: 0, ...listFilterAdvanced })}
+            onClick={() => fetch({ ...filter, pageIndex: 0, ...filterAdvanced })}
           >
             Search
           </Button>
@@ -315,10 +346,10 @@ export const ContentListView: React.FC = () => {
             name="clear"
             variant={ButtonVariant.secondary}
             onClick={() => {
-              setListFilterAdvanced({
-                ...defaultListAdvancedFilter,
+              storeFilterAdvanced({
+                ...initialContentState.filterAdvanced,
               });
-              setListFilter({ ...listFilter, pageIndex: 0 });
+              storeFilter({ ...filter, pageIndex: 0 });
             }}
           >
             Clear

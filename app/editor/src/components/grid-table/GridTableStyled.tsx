@@ -16,6 +16,9 @@ export const GridTable = styled.div`
       &:first-child {
         background-color: ${(props) => props.theme.css.tableHeaderColor};
       }
+      &:hover {
+        background-color: ${(props) => props.theme.css.tableHeaderColor};
+      }
     }
   }
 
@@ -25,7 +28,7 @@ export const GridTable = styled.div`
     grid-auto-columns: 1fr;
     border-bottom: solid 1px #efefef;
 
-    &:hover {
+    &:not(.rh):hover {
       background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15));
     }
 

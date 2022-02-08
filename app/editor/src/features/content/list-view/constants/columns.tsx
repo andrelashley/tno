@@ -1,7 +1,7 @@
 import { Checkbox } from 'components';
 import { ContentStatus, IContentModel } from 'hooks/api-editor';
 import moment from 'moment';
-import { Column } from 'react-table';
+import { Column, UseSortByColumnOptions } from 'react-table';
 
 const checkboxColumn = ({ value }: { value: boolean }) => (
   <Checkbox defaultChecked={value} value={value ? 'true' : 'false'} />
@@ -13,7 +13,7 @@ const dateColumn = ({ value }: { value: IContentModel }) => {
   return <>{text}</>;
 };
 
-export const columns: Column<IContentModel>[] = [
+export const columns: (Column<IContentModel> & UseSortByColumnOptions<IContentModel>)[] = [
   {
     id: 'headline',
     Header: 'Headline',
@@ -56,6 +56,7 @@ export const columns: Column<IContentModel>[] = [
   {
     id: 'use',
     Header: 'Use',
+    disableSortBy: true,
     accessor: (row) =>
       row.status === ContentStatus.Publish || row.status === ContentStatus.Published,
     Cell: checkboxColumn,

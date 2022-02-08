@@ -157,7 +157,7 @@ export const GridTable = <T extends object>({
     <styled.GridTable {...getTableProps()}>
       <div role="rowheader">
         {headerGroups.map((headerGroup) => (
-          <div role="rowgroup" {...headerGroup.getHeaderGroupProps()}>
+          <div className="rh" {...headerGroup.getHeaderGroupProps()}>
             {headerGroup.headers.map((column) => (
               <div {...column.getHeaderProps(column.getSortByToggleProps())}>
                 {column.render('Header')}
